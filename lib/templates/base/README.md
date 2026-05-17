@@ -7,8 +7,8 @@ Open **two terminal windows**.
 ### Terminal 1 — Server
 ```bash
 cd server
-npm install
-npm run dev
+# Express: npm install && npm run dev
+# Flask:   pip install -r requirements.txt && python app.py
 ```
 
 ### Terminal 2 — Client

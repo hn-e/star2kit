@@ -7,7 +7,7 @@ const TEMPLATES = path.join(process.cwd(), 'lib', 'templates')
 
 export async function generateProject(options: ProjectOptions): Promise<Buffer> {
   const zip = new JSZip()
-  const { frontend, sqlite } = options
+  const { frontend, backend, sqlite } = options
 
   function add(srcRel: string, destRel: string) {
     const full = path.join(TEMPLATES, srcRel)
@@ -30,19 +30,21 @@ export async function generateProject(options: ProjectOptions): Promise<Buffer> 
   addDir('base', '')
 
   // 2. Server
-  addDir('express/server', 'server')
+  addDir(`${backend}/server`, 'server')
 
   // 3. Frontend
   addDir(`${frontend}/client`, 'client')
 
   // 4. SQLite
   if (sqlite) {
-    addDir('sqlite/server/src', 'server/src')
+    addDir(`sqlite/${backend}/server`, 'server')
     addDir(`sqlite/${frontend}/client/src/pages`, 'client/src/pages')
   }
 
   // 5. Dynamic files
-  zip.file('server/package.json', generateServerPkg(sqlite))
+  if (backend === 'express') {
+    zip.file('server/package.json', generateServerPkg())
+  }
   if (frontend === 'react') {
     zip.file('client/src/App.tsx', generateReactApp(sqlite))
   } else {
@@ -52,7 +54,7 @@ export async function generateProject(options: ProjectOptions): Promise<Buffer> 
   return zip.generateAsync({ type: 'nodebuffer' })
 }
 
-function generateServerPkg(_sqlite: boolean): string {
+function generateServerPkg(): string {
   return JSON.stringify({
     name: 'server',
     private: true,

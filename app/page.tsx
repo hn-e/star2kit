@@ -3,9 +3,11 @@
 import { useState } from 'react'
 
 type Frontend = 'react' | 'vue'
+type Backend = 'express' | 'flask'
 
 export default function Home() {
   const [frontend, setFrontend] = useState<Frontend>('react')
+  const [backend, setBackend] = useState<Backend>('express')
   const [sqlite, setSqlite] = useState(false)
   const [loading, setLoading] = useState(false)
 
@@ -15,7 +17,7 @@ export default function Home() {
       const res = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ frontend, sqlite }),
+        body: JSON.stringify({ frontend, backend, sqlite }),
       })
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
@@ -50,16 +52,16 @@ export default function Home() {
       </Section>
 
       <Section title="Step 2 — Backend">
-        <div style={{
-          padding: '1rem',
-          background: '#eef2ff',
-          borderRadius: 8,
-          border: '2px solid #c7d2fe',
-          color: '#4338ca',
-          fontSize: '0.9rem',
-        }}>
-          Express — port 3001
-        </div>
+        <CardGrid>
+          <Card selected={backend === 'express'} onClick={() => setBackend('express')}>
+            <strong>Express</strong>
+            <span style={{ fontSize: '0.8rem', color: '#666' }}>TypeScript — port 3001</span>
+          </Card>
+          <Card selected={backend === 'flask'} onClick={() => setBackend('flask')}>
+            <strong>Flask</strong>
+            <span style={{ fontSize: '0.8rem', color: '#666' }}>Python — port 3001</span>
+          </Card>
+        </CardGrid>
       </Section>
 
       <Section title="Step 3 — Database">
@@ -70,7 +72,7 @@ export default function Home() {
           </Card>
           <Card selected={sqlite} onClick={() => setSqlite(true)}>
             <strong>SQLite</strong>
-            <span style={{ fontSize: '0.8rem', color: '#666' }}>better-sqlite3</span>
+            <span style={{ fontSize: '0.8rem', color: '#666' }}>node:sqlite</span>
           </Card>
         </CardGrid>
       </Section>
