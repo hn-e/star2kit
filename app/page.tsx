@@ -133,7 +133,7 @@ function OptionCard({ id, name, selected, onSelect, logo, available }: { id: str
       `}
     >
       <div className={`
-        flex-shrink-0 w-11 h-11 rounded-lg flex items-center justify-center transition-colors duration-200
+        shrink-0 w-11 h-11 rounded-lg flex items-center justify-center transition-colors duration-200
         ${selected ? 'bg-black text-white' : 'bg-gray-50 text-gray-500 group-hover:bg-gray-100'}
       `}>
         <span key={name || '_'} style={{ animation: name ? 'fadeIcon 0.3s ease-out' : 'none' }}>{logo}</span>
@@ -142,10 +142,9 @@ function OptionCard({ id, name, selected, onSelect, logo, available }: { id: str
         {name}
       </div>
       <div className="ml-auto flex items-center gap-2">
-        {!available && <span className="text-xs">🚧</span>}
         <div className={`
-          flex-shrink-0 w-6 h-6 rounded-full border flex items-center justify-center transition-all duration-200
-          ${selected ? 'border-black bg-black' : 'border-gray-300'}
+          shrink-0 w-6 h-6 rounded-full border flex items-center justify-center transition-all duration-200
+          ${selected ? (available ? 'border-black bg-black' : 'border-gray-400 bg-gray-400') : 'border-gray-300'}
         `}>
           {selected && (
             <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
@@ -163,7 +162,7 @@ function SlotPreview({ selected, brand, logo, name }: { selected: boolean; brand
     return (
       <div className="flex flex-col items-center gap-2 w-24">
         <div
-          className="w-16 h-16 rounded-2xl flex items-center justify-center text-white shadow-md transition-all duration-300 flex-shrink-0"
+          className="w-16 h-16 rounded-2xl flex items-center justify-center text-white shadow-md transition-all duration-300 shrink-0"
           style={{ background: brand }}
         >
           <span key={name} style={{ animation: 'popIn 0.2s ease-out' }}>{logo}</span>
@@ -322,7 +321,7 @@ function LivePreview({
         </div>
       </div>
 
-      <div className="mt-auto pt-6 min-h-[100px] flex flex-col items-center justify-end">
+      <div className="mt-auto pt-6 min-h-25 flex flex-col items-center justify-end">
         {step === 5 && style !== null ? (
           <div className="flex flex-col items-center gap-3 w-full" style={{ animation: 'fadeSlideUp 0.4s ease-out' }}>
             <button
