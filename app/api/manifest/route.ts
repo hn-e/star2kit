@@ -27,7 +27,7 @@ export async function GET() {
     storages: [
       { id: 'none', name: 'None', available: true },
       { id: 'local', name: 'Local', available: false },
-      { id: 'r2', name: 'Cloudflare R2', available: false },
+      { id: 'r2', name: 'Cloudflare R2', available: true },
       { id: 's3', name: 'AWS S3', available: false },
       { id: 'supabase', name: 'Supabase', available: false },
     ],

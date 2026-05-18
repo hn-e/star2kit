@@ -7,12 +7,8 @@ const TEMPLATES = path.join(process.cwd(), 'lib', 'templates')
 
 export async function generateProject(options: ProjectOptions): Promise<Buffer> {
   const zip = new JSZip()
-  const { frontend, backend, sqlite } = options
-
-  function add(srcRel: string, destRel: string) {
-    const full = path.join(TEMPLATES, srcRel)
-    if (fs.existsSync(full)) zip.file(destRel, fs.readFileSync(full, 'utf-8'))
-  }
+  const { frontend, backend, sqlite, storage } = options
+  const hasR2 = storage === 'r2'
 
   function addDir(dirRel: string, destPrefix: string) {
     const full = path.join(TEMPLATES, dirRel)
@@ -29,7 +25,7 @@ export async function generateProject(options: ProjectOptions): Promise<Buffer> 
   // 1. Base
   addDir('base', '')
 
-  // 2. Server
+  // 2. Server static files (tsconfig, etc.)
   addDir(`${backend}/server`, 'server')
 
   // 3. Frontend
@@ -41,61 +37,127 @@ export async function generateProject(options: ProjectOptions): Promise<Buffer> 
     addDir(`sqlite/${frontend}/client/src/pages`, 'client/src/pages')
   }
 
-  // 5. Dynamic files
-  if (backend === 'express') {
-    zip.file('server/package.json', generateServerPkg())
+  // 5. Storage (R2)
+  if (hasR2) {
+    addDir(`storage/r2/${backend}/server`, 'server')
+    addDir(`storage/r2/${frontend}/client/src/pages`, 'client/src/pages')
   }
-  if (frontend === 'react') {
-    zip.file('client/src/App.tsx', generateReactApp(sqlite))
+
+  // 6. Dynamic files
+  zip.file('server/package.json', generateServerPkg(hasR2))
+  if (backend === 'express') {
+    zip.file('server/src/index.ts', generateExpressIndex(sqlite, hasR2))
   } else {
-    zip.file('client/src/router/index.ts', generateVueRouter(sqlite))
+    zip.file('server/requirements.txt', generateFlaskReqs(hasR2))
+    zip.file('server/app.py', generateFlaskApp(sqlite, hasR2))
+  }
+
+  if (frontend === 'react') {
+    zip.file('client/src/App.tsx', generateReactApp(sqlite, hasR2))
+  } else {
+    zip.file('client/src/router/index.ts', generateVueRouter(sqlite, hasR2))
+  }
+
+  // 7. .env
+  if (hasR2) {
+    zip.file('.env', generateEnv(hasR2))
   }
 
   return zip.generateAsync({ type: 'nodebuffer' })
 }
 
-function generateServerPkg(): string {
+function generateServerPkg(r2: boolean): string {
+  const deps: Record<string, string> = { express: '^4.21.0', cors: '^2.8.5' }
+  const devDeps: Record<string, string> = {
+    '@types/express': '^5.0.0',
+    '@types/cors': '^2.8.17',
+    tsx: '^4.19.0',
+    typescript: '^5.0.0',
+  }
+  if (r2) {
+    deps['@aws-sdk/client-s3'] = '^3.0.0'
+    deps['multer'] = '^2.0.0'
+    devDeps['@types/multer'] = '^1.4.0'
+  }
   return JSON.stringify({
-    name: 'server',
-    private: true,
-    type: 'module',
+    name: 'server', private: true, type: 'module',
     scripts: { dev: 'tsx watch src/index.ts' },
-    dependencies: { express: '^4.21.0', cors: '^2.8.5' },
-    devDependencies: {
-      '@types/express': '^5.0.0',
-      '@types/cors': '^2.8.17',
-      tsx: '^4.19.0',
-      typescript: '^5.0.0',
-    },
+    dependencies: deps, devDependencies: devDeps,
   }, null, 2)
 }
 
-function generateReactApp(sqlite: boolean): string {
+function generateFlaskReqs(r2: boolean): string {
+  const reqs = ['flask==3.1.0', 'flask-cors==5.0.1']
+  if (r2) reqs.push('boto3')
+  return reqs.join('\n') + '\n'
+}
+
+function generateExpressIndex(sqlite: boolean, r2: boolean): string {
+  const lines: string[] = [
+    `import express from 'express'`,
+    `import cors from 'cors'`,
+  ]
+  if (sqlite) {
+    lines.push(`import { initDB } from './db'`)
+    lines.push(`import pushRouter from './routes/push'`)
+    lines.push(`import listRouter from './routes/list'`)
+  }
+  if (r2) {
+    lines.push(`import uploadRouter from './routes/upload'`)
+    lines.push(`import filesRouter from './routes/files'`)
+  }
+  lines.push(``, `const app = express()`, `app.use(cors())`, `app.use(express.json())`)
+  if (sqlite) { lines.push(`initDB()`) }
+  if (r2) { lines.push(`app.use(express.urlencoded({ extended: true }))`) }
+  if (sqlite) { lines.push(`app.use('/api/push', pushRouter)`, `app.use('/api/list', listRouter)`) }
+  if (r2) { lines.push(`app.use('/api/upload', uploadRouter)`, `app.use('/api/files', filesRouter)`) }
+  lines.push(`app.get('/api/health', (_req, res) => res.json({ status: 'ok' }))`)
+  lines.push(`app.listen(3001, () => console.log('Server running on http://localhost:3001'))`)
+  return lines.join('\n')
+}
+
+function generateFlaskApp(sqlite: boolean, r2: boolean): string {
+  const lines: string[] = [
+    `from flask import Flask`,
+    `from flask_cors import CORS`,
+  ]
+  if (sqlite) { lines.push(`import db`, `from routes.push import push_bp`, `from routes.list import list_bp`) }
+  if (r2) { lines.push(`from routes.upload import upload_bp`, `from routes.files import files_bp`) }
+  lines.push(``, `app = Flask(__name__)`, `CORS(app)`)
+  if (sqlite) { lines.push(`db.init_db()`, `app.register_blueprint(push_bp)`, `app.register_blueprint(list_bp)`) }
+  if (r2) { lines.push(`app.register_blueprint(upload_bp)`, `app.register_blueprint(files_bp)`) }
+  lines.push(`@app.route('/api/health')`, `def health():`, `    return {'status': 'ok'}`, ``)
+  lines.push(`if __name__ == '__main__':`, `    app.run(port=3001, debug=True)`)
+  return lines.join('\n')
+}
+
+function generateReactApp(sqlite: boolean, r2: boolean): string {
   const lines: string[] = [
     `import { Routes, Route, Link } from 'react-router-dom'`,
     `import Home from './pages/Home'`,
   ]
-  const routes: string[] = [
-    `<Route path="/" element={<Home />} />`,
-  ]
+  const routes: string[] = [`<Route path="/" element={<Home />} />`]
+  const nav: string[] = [`<Link to="/">Home</Link>`]
   if (sqlite) {
-    lines.push(`import Push from './pages/Push'`)
-    lines.push(`import List from './pages/List'`)
-    routes.push(`<Route path="/push" element={<Push />} />`)
-    routes.push(`<Route path="/list" element={<List />} />`)
+    lines.push(`import Push from './pages/Push'`, `import List from './pages/List'`)
+    routes.push(`<Route path="/push" element={<Push />} />`, `<Route path="/list" element={<List />} />`)
+    nav.push(`<Link to="/push">Push</Link>`, `<Link to="/list">List</Link>`)
+  }
+  if (r2) {
+    lines.push(`import Upload from './pages/Upload'`, `import Files from './pages/Files'`)
+    routes.push(`<Route path="/upload" element={<Upload />} />`, `<Route path="/files" element={<Files />} />`)
+    nav.push(`<Link to="/upload">Upload</Link>`, `<Link to="/files">Files</Link>`)
   }
   return [
-    ...lines,
-    ``,
+    ...lines, ``,
     `export default function App() {`,
     `  return (`,
     `    <div>`,
     `      <nav>`,
-    `        <Link to="/">Home</Link>`,
-    sqlite ? `        <Link to="/push">Push</Link>\n        <Link to="/list">List</Link>` : '',
+    ...nav.map(l => `        ${l}`),
     `      </nav>`,
     `      <Routes>`,
-    `        ${routes.join('\n        ')}`,
+    ...routes.map(l => `        ${l}`),
     `      </Routes>`,
     `    </div>`,
     `  )`,
@@ -103,30 +165,40 @@ function generateReactApp(sqlite: boolean): string {
   ].join('\n')
 }
 
-function generateVueRouter(sqlite: boolean): string {
+function generateVueRouter(sqlite: boolean, r2: boolean): string {
   const lines: string[] = [
     `import { createRouter, createWebHistory } from 'vue-router'`,
     `import Home from '../pages/Home.vue'`,
   ]
-  const routes: string[] = [
-    `{ path: '/', component: Home },`,
-  ]
+  const routes: string[] = [`{ path: '/', component: Home },`]
   if (sqlite) {
-    lines.push(`import Push from '../pages/Push.vue'`)
-    lines.push(`import List from '../pages/List.vue'`)
-    routes.push(`{ path: '/push', component: Push },`)
-    routes.push(`{ path: '/list', component: List },`)
+    lines.push(`import Push from '../pages/Push.vue'`, `import List from '../pages/List.vue'`)
+    routes.push(`{ path: '/push', component: Push },`, `{ path: '/list', component: List },`)
+  }
+  if (r2) {
+    lines.push(`import Upload from '../pages/Upload.vue'`, `import Files from '../pages/Files.vue'`)
+    routes.push(`{ path: '/upload', component: Upload },`, `{ path: '/files', component: Files },`)
   }
   return [
-    ...lines,
-    ``,
+    ...lines, ``,
     `const routes = [`,
-    `  ${routes.join('\n  ')}`,
-    `]`,
-    ``,
+    ...routes.map(l => `  ${l}`),
+    `]`, ``,
     `export default createRouter({`,
     `  history: createWebHistory(),`,
     `  routes,`,
     `})`,
+  ].join('\n')
+}
+
+function generateEnv(_r2: boolean): string {
+  return [
+    `# R2 Storage`,
+    `R2_ENDPOINT=`,
+    `R2_ACCESS_KEY=`,
+    `R2_SECRET_KEY=`,
+    `R2_BUCKET_NAME=`,
+    `R2_PUBLIC_URL=`,
+    ``,
   ].join('\n')
 }

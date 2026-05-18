@@ -553,6 +553,7 @@ export default function Home() {
     const mappedFrontend = ['react', 'vue'].includes(frontend || '') ? frontend : 'react'
     const mappedBackend = ['express', 'flask'].includes(backend || '') ? backend : 'express'
     const mappedSqlite = database === 'sqlite'
+    const mappedStorage = storage === 'r2' ? 'r2' : null
 
     try {
       const res = await fetch('/api/generate', {
@@ -562,6 +563,11 @@ export default function Home() {
           frontend: mappedFrontend,
           backend: mappedBackend,
           sqlite: mappedSqlite,
+          storage: mappedStorage,
+          r2Endpoint: r2Endpoint || undefined,
+          r2AccessKey: r2AccessKey || undefined,
+          r2SecretKey: r2SecretKey || undefined,
+          r2BucketName: r2BucketName || undefined,
         }),
       })
 
