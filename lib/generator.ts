@@ -58,10 +58,10 @@ export async function generateProject(options: ProjectOptions): Promise<Buffer> 
     zip.file('client/src/router/index.ts', generateVueRouter(sqlite, hasR2))
   }
 
-  // 7. .env
-  if (hasR2) {
-    zip.file('.env', generateEnv(hasR2))
-  }
+  // 7. .env files
+  const envContent = generateEnv(options)
+  zip.file('server/.env', envContent)
+  zip.file('client/.env', envContent)
 
   return zip.generateAsync({ type: 'nodebuffer' })
 }
@@ -79,6 +79,8 @@ function generateServerPkg(r2: boolean): string {
     deps['multer'] = '^2.0.0'
     devDeps['@types/multer'] = '^1.4.0'
   }
+  deps['dotenv'] = '^16.0.0'
+  devDeps['@types/dotenv'] = '^8.2.0'
   return JSON.stringify({
     name: 'server', private: true, type: 'module',
     scripts: { dev: 'tsx watch src/index.ts' },
@@ -87,13 +89,14 @@ function generateServerPkg(r2: boolean): string {
 }
 
 function generateFlaskReqs(r2: boolean): string {
-  const reqs = ['flask==3.1.0', 'flask-cors==5.0.1']
+  const reqs = ['flask==3.1.0', 'flask-cors==5.0.1', 'python-dotenv==1.1.0']
   if (r2) reqs.push('boto3')
   return reqs.join('\n') + '\n'
 }
 
 function generateExpressIndex(sqlite: boolean, r2: boolean): string {
   const lines: string[] = [
+    `import 'dotenv/config'`,
     `import express from 'express'`,
     `import cors from 'cors'`,
   ]
@@ -191,14 +194,10 @@ function generateVueRouter(sqlite: boolean, r2: boolean): string {
   ].join('\n')
 }
 
-function generateEnv(_r2: boolean): string {
-  return [
-    `# R2 Storage`,
-    `R2_ENDPOINT=`,
-    `R2_ACCESS_KEY=`,
-    `R2_SECRET_KEY=`,
-    `R2_BUCKET_NAME=`,
-    `R2_PUBLIC_URL=`,
-    ``,
-  ].join('\n')
+function generateEnv(options: ProjectOptions): string {
+  const lines: string[] = []
+  if (options.storage === 'r2') {
+    lines.push(`# R2 Storage`, `R2_ENDPOINT=${options.r2Endpoint || ''}`, `R2_ACCESS_KEY=${options.r2AccessKey || ''}`, `R2_SECRET_KEY=${options.r2SecretKey || ''}`, `R2_BUCKET_NAME=${options.r2BucketName || ''}`, `R2_PUBLIC_URL=`)
+  }
+  return lines.join('\n') + '\n'
 }
