@@ -33,7 +33,7 @@ export async function GET() {
     ],
     auths: [
       { id: 'none', name: 'None', available: true },
-      { id: 'clerk', name: 'Clerk', available: false },
+      { id: 'clerk', name: 'Clerk', available: true },
       { id: 'auth0', name: 'Auth0', available: true },
     ],
     styles: [

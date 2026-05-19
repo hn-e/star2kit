@@ -568,7 +568,7 @@ export default function Home() {
     const mappedBackend = ['express', 'flask'].includes(backend || '') ? backend : 'express'
     const mappedSqlite = database === 'sqlite'
     const mappedStorage = (storage === 'r2' || storage === 's3') ? storage : null
-    const mappedAuth = auth === 'auth0' ? 'auth0' : null
+    const mappedAuth = (auth === 'auth0' || auth === 'clerk') ? auth : null
 
     try {
       const res = await fetch('/api/generate', {
@@ -582,6 +582,7 @@ export default function Home() {
           auth: mappedAuth,
           auth0Domain: auth0Domain || undefined,
           auth0ClientId: auth0ClientId || undefined,
+          clerkPublishableKey: clerkPublishableKey || undefined,
           r2Endpoint: r2Endpoint || undefined,
           r2AccessKey: r2AccessKey || undefined,
           r2SecretKey: r2SecretKey || undefined,
