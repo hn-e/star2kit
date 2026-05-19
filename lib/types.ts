@@ -13,4 +13,5 @@ export interface ProjectOptions {
   s3SecretKey?: string
   s3BucketName?: string
   s3Region?: string
+  s3PublicUrl?: string
 }

@@ -220,7 +220,7 @@ function LivePreview({
   databaseUrl, setDatabaseUrl,
   appwriteEndpoint, setAppwriteEndpoint, appwriteProjectId, setAppwriteProjectId, appwriteApiKey, setAppwriteApiKey,
   r2Endpoint, setR2Endpoint, r2AccessKey, setR2AccessKey, r2SecretKey, setR2SecretKey, r2BucketName, setR2BucketName, r2PublicUrl, setR2PublicUrl,
-  s3Endpoint, setS3Endpoint, s3AccessKey, setS3AccessKey, s3SecretKey, setS3SecretKey, s3BucketName, setS3BucketName, s3Region, setS3Region,
+  s3Endpoint, setS3Endpoint, s3AccessKey, setS3AccessKey, s3SecretKey, setS3SecretKey, s3BucketName, setS3BucketName, s3Region, setS3Region, s3PublicUrl, setS3PublicUrl,
   supabaseStorageUrl, setSupabaseStorageUrl, supabaseStorageKey, setSupabaseStorageKey,
   clerkPublishableKey, setClerkPublishableKey, clerkSecretKey, setClerkSecretKey,
   mongodbUri, setMongodbUri,
@@ -233,7 +233,7 @@ function LivePreview({
   databaseUrl: string; setDatabaseUrl: (v: string) => void
   appwriteEndpoint: string; setAppwriteEndpoint: (v: string) => void; appwriteProjectId: string; setAppwriteProjectId: (v: string) => void; appwriteApiKey: string; setAppwriteApiKey: (v: string) => void
   r2Endpoint: string; setR2Endpoint: (v: string) => void; r2AccessKey: string; setR2AccessKey: (v: string) => void; r2SecretKey: string; setR2SecretKey: (v: string) => void; r2BucketName: string; setR2BucketName: (v: string) => void; r2PublicUrl: string; setR2PublicUrl: (v: string) => void
-  s3Endpoint: string; setS3Endpoint: (v: string) => void; s3AccessKey: string; setS3AccessKey: (v: string) => void; s3SecretKey: string; setS3SecretKey: (v: string) => void; s3BucketName: string; setS3BucketName: (v: string) => void; s3Region: string; setS3Region: (v: string) => void
+  s3Endpoint: string; setS3Endpoint: (v: string) => void; s3AccessKey: string; setS3AccessKey: (v: string) => void; s3SecretKey: string; setS3SecretKey: (v: string) => void; s3BucketName: string; setS3BucketName: (v: string) => void; s3Region: string; setS3Region: (v: string) => void; s3PublicUrl: string; setS3PublicUrl: (v: string) => void
   supabaseStorageUrl: string; setSupabaseStorageUrl: (v: string) => void; supabaseStorageKey: string; setSupabaseStorageKey: (v: string) => void
   clerkPublishableKey: string; setClerkPublishableKey: (v: string) => void; clerkSecretKey: string; setClerkSecretKey: (v: string) => void
   mongodbUri: string; setMongodbUri: (v: string) => void
@@ -403,7 +403,8 @@ function LivePreview({
               <div className="mt-3"><label className={labelStyle}>Access Key</label><input type="text" value={s3AccessKey} onChange={e => setS3AccessKey(e.target.value)} placeholder="your-access-key" className={inputStyle} /></div>
               <div className="mt-3"><label className={labelStyle}>Secret Key</label><input type="text" value={s3SecretKey} onChange={e => setS3SecretKey(e.target.value)} placeholder="your-secret-key" className={inputStyle} /></div>
               <div className="mt-3"><label className={labelStyle}>Bucket Name</label><input type="text" value={s3BucketName} onChange={e => setS3BucketName(e.target.value)} placeholder="my-bucket" className={inputStyle} /></div>
-              <div className="mt-3"><label className={labelStyle}>Region</label><input type="text" value={s3Region} onChange={e => setS3Region(e.target.value)} placeholder="us-east-1" className={inputStyle} /></div></div>
+              <div className="mt-3"><label className={labelStyle}>Region</label><input type="text" value={s3Region} onChange={e => setS3Region(e.target.value)} placeholder="us-east-1" className={inputStyle} /></div>
+              <div className="mt-3"><label className={labelStyle}>Public URL</label><input type="text" value={s3PublicUrl} onChange={e => setS3PublicUrl(e.target.value)} placeholder="https://my-bucket.s3.amazonaws.com" className={inputStyle} /></div></div>
             )}
             {step === 3 && storage === 'supabase' && (
               <div><label className={labelStyle}>Supabase URL</label><input type="text" value={supabaseStorageUrl} onChange={e => setSupabaseStorageUrl(e.target.value)} placeholder="https://your-project.supabase.co" className={inputStyle} />
@@ -464,6 +465,7 @@ export default function Home() {
   const [s3SecretKey, setS3SecretKey] = useState('')
   const [s3BucketName, setS3BucketName] = useState('')
   const [s3Region, setS3Region] = useState('')
+  const [s3PublicUrl, setS3PublicUrl] = useState('')
   const [supabaseStorageUrl, setSupabaseStorageUrl] = useState('')
   const [supabaseStorageKey, setSupabaseStorageKey] = useState('')
   const [mongodbUri, setMongodbUri] = useState('')
@@ -536,6 +538,7 @@ export default function Home() {
     setS3SecretKey('')
     setS3BucketName('')
     setS3Region('')
+    setS3PublicUrl('')
     setSupabaseStorageUrl('')
     setSupabaseStorageKey('')
     setClerkPublishableKey('')
@@ -576,6 +579,7 @@ export default function Home() {
           s3SecretKey: s3SecretKey || undefined,
           s3BucketName: s3BucketName || undefined,
           s3Region: s3Region || undefined,
+          s3PublicUrl: s3PublicUrl || undefined,
         }),
       })
 
@@ -839,7 +843,7 @@ export default function Home() {
                 r2SecretKey={r2SecretKey} setR2SecretKey={setR2SecretKey} r2BucketName={r2BucketName} setR2BucketName={setR2BucketName} r2PublicUrl={r2PublicUrl} setR2PublicUrl={setR2PublicUrl}
                 s3Endpoint={s3Endpoint} setS3Endpoint={setS3Endpoint} s3AccessKey={s3AccessKey} setS3AccessKey={setS3AccessKey}
                 s3SecretKey={s3SecretKey} setS3SecretKey={setS3SecretKey} s3BucketName={s3BucketName} setS3BucketName={setS3BucketName}
-                s3Region={s3Region} setS3Region={setS3Region}
+                s3Region={s3Region} setS3Region={setS3Region} s3PublicUrl={s3PublicUrl} setS3PublicUrl={setS3PublicUrl}
                 supabaseStorageUrl={supabaseStorageUrl} setSupabaseStorageUrl={setSupabaseStorageUrl}
                 supabaseStorageKey={supabaseStorageKey} setSupabaseStorageKey={setSupabaseStorageKey}
                 clerkPublishableKey={clerkPublishableKey} setClerkPublishableKey={setClerkPublishableKey}

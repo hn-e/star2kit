@@ -200,7 +200,7 @@ function generateEnv(options: ProjectOptions): string {
     lines.push(`# R2 Storage`, `R2_ENDPOINT=${options.r2Endpoint || ''}`, `R2_ACCESS_KEY=${options.r2AccessKey || ''}`, `R2_SECRET_KEY=${options.r2SecretKey || ''}`, `R2_BUCKET_NAME=${options.r2BucketName || ''}`, `R2_PUBLIC_URL=${options.r2PublicUrl || ''}`)
   }
   if (options.storage === 's3') {
-    lines.push(`# S3 Storage`, `S3_ENDPOINT=${options.s3Endpoint || ''}`, `S3_ACCESS_KEY=${options.s3AccessKey || ''}`, `S3_SECRET_KEY=${options.s3SecretKey || ''}`, `S3_BUCKET_NAME=${options.s3BucketName || ''}`, `S3_REGION=${options.s3Region || ''}`, `S3_PUBLIC_URL=`)
+    lines.push(`# S3 Storage`, `S3_ENDPOINT=${options.s3Endpoint || ''}`, `S3_ACCESS_KEY=${options.s3AccessKey || ''}`, `S3_SECRET_KEY=${options.s3SecretKey || ''}`, `S3_BUCKET_NAME=${options.s3BucketName || ''}`, `S3_REGION=${options.s3Region || ''}`, `S3_PUBLIC_URL=${options.s3PublicUrl || ''}`)
   }
   return lines.join('\n') + '\n'
 }
