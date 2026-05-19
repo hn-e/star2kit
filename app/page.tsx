@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { SiJavascript, SiJquery, SiReact, SiVuedotjs, SiSvelte, SiSolid, SiFlask, SiExpress, SiFastapi, SiNextdotjs, SiDjango, SiSqlite, SiSupabase, SiPostgresql, SiAppwrite, SiMysql, SiMongodb, SiTailwindcss, SiBootstrap, SiBulma, SiClerk } from 'react-icons/si'
+import GenerateOverlay from '@/lib/generate-overlay'
 import { FaAws, FaCloudflare } from 'react-icons/fa'
 
 const BRAND: Record<string, { hex: string; name: string }> = {
@@ -216,6 +217,7 @@ function ExpandRow({ show, children }: { show: boolean; children: React.ReactNod
 function LivePreview({
   frontend, backend, auth, style, database, storage, docker, setDocker,
   step, downloading, handleDownload, handleReset, manifest,
+  generating, onGenerateReady,
   supabaseUrl, setSupabaseUrl, supabaseKey, setSupabaseKey,
   databaseUrl, setDatabaseUrl,
   appwriteEndpoint, setAppwriteEndpoint, appwriteProjectId, setAppwriteProjectId, appwriteApiKey, setAppwriteApiKey,
@@ -230,6 +232,7 @@ function LivePreview({
   frontend: string | null; backend: string | null; auth: string | null; style: string | null; database: string | null; storage: string | null
   docker: boolean; setDocker: (v: boolean) => void
   step: number; downloading: boolean; handleDownload: () => void; handleReset: () => void; manifest: Manifest | null
+  generating: boolean; onGenerateReady: () => void
   supabaseUrl: string; setSupabaseUrl: (v: string) => void; supabaseKey: string; setSupabaseKey: (v: string) => void
   databaseUrl: string; setDatabaseUrl: (v: string) => void
   appwriteEndpoint: string; setAppwriteEndpoint: (v: string) => void; appwriteProjectId: string; setAppwriteProjectId: (v: string) => void; appwriteApiKey: string; setAppwriteApiKey: (v: string) => void
@@ -268,8 +271,11 @@ function LivePreview({
   }
 
   return (
-    <div className="bg-white rounded-2xl p-6 lg:sticky lg:top-8 min-h-[80vh] flex flex-col relative overflow-hidden" style={{ backgroundImage: 'radial-gradient(circle, #cbd5e1 1px, transparent 1px)', backgroundSize: '22px 22px' }}>
-      <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider text-center mb-6">
+    <div className="bg-white rounded-2xl lg:sticky lg:top-8 min-h-[80vh] flex flex-col relative overflow-hidden" style={{ backgroundImage: 'radial-gradient(circle, #cbd5e1 1px, transparent 1px)', backgroundSize: '22px 22px' }}>
+      {generating ? (
+        <GenerateOverlay open onReady={onGenerateReady} />
+      ) : (
+      <div className="flex flex-col flex-1 p-6"><h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider text-center mb-6">
         Your Stack
       </h3>
 
@@ -435,6 +441,7 @@ function LivePreview({
           </div>
         </div>
       )}
+      </div>)}
     </div>
   )
 }
@@ -488,7 +495,9 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [downloading, setDownloading] = useState(false)
+  const [showOverlay, setShowOverlay] = useState(false)
   const [manifest, setManifest] = useState<Manifest | null>(null)
+  const downloadOptsRef = useRef<Record<string, unknown>>({})
 
   useEffect(() => {
     fetch('/api/manifest')
@@ -561,42 +570,41 @@ export default function Home() {
     setDbName('')
   }
 
-  const handleDownload = async () => {
+  const handleDownload = () => {
+    downloadOptsRef.current = {
+      frontend: ['react', 'vue'].includes(frontend || '') ? frontend : 'react',
+      backend: ['express', 'flask'].includes(backend || '') ? backend : 'express',
+      sqlite: database === 'sqlite',
+      storage: (storage === 'r2' || storage === 's3') ? storage : null,
+      auth: (auth === 'auth0' || auth === 'clerk') ? auth : null,
+      auth0Domain: auth0Domain || undefined,
+      auth0ClientId: auth0ClientId || undefined,
+      clerkPublishableKey: clerkPublishableKey || undefined,
+      r2Endpoint: r2Endpoint || undefined,
+      r2AccessKey: r2AccessKey || undefined,
+      r2SecretKey: r2SecretKey || undefined,
+      r2BucketName: r2BucketName || undefined,
+      r2PublicUrl: r2PublicUrl || undefined,
+      s3Endpoint: s3Endpoint || undefined,
+      s3AccessKey: s3AccessKey || undefined,
+      s3SecretKey: s3SecretKey || undefined,
+      s3BucketName: s3BucketName || undefined,
+      s3Region: s3Region || undefined,
+      s3PublicUrl: s3PublicUrl || undefined,
+    }
+    setShowOverlay(true)
+  }
+
+  const onOverlayReady = useCallback(async () => {
     setDownloading(true)
-
-    const mappedFrontend = ['react', 'vue'].includes(frontend || '') ? frontend : 'react'
-    const mappedBackend = ['express', 'flask'].includes(backend || '') ? backend : 'express'
-    const mappedSqlite = database === 'sqlite'
-    const mappedStorage = (storage === 'r2' || storage === 's3') ? storage : null
-    const mappedAuth = (auth === 'auth0' || auth === 'clerk') ? auth : null
-
+    const opts = downloadOptsRef.current as Record<string, unknown>
     try {
       const res = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          frontend: mappedFrontend,
-          backend: mappedBackend,
-          sqlite: mappedSqlite,
-          storage: mappedStorage,
-          auth: mappedAuth,
-          auth0Domain: auth0Domain || undefined,
-          auth0ClientId: auth0ClientId || undefined,
-          clerkPublishableKey: clerkPublishableKey || undefined,
-          r2Endpoint: r2Endpoint || undefined,
-          r2AccessKey: r2AccessKey || undefined,
-          r2SecretKey: r2SecretKey || undefined,
-          r2BucketName: r2BucketName || undefined,
-          r2PublicUrl: r2PublicUrl || undefined,
-          s3Endpoint: s3Endpoint || undefined,
-          s3AccessKey: s3AccessKey || undefined,
-          s3SecretKey: s3SecretKey || undefined,
-          s3BucketName: s3BucketName || undefined,
-          s3Region: s3Region || undefined,
-          s3PublicUrl: s3PublicUrl || undefined,
-        }),
+        body: JSON.stringify(opts),
       })
-
+      return;
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -608,8 +616,9 @@ export default function Home() {
       alert('Failed to download. Please try again.')
     } finally {
       setDownloading(false)
+      setShowOverlay(false)
     }
-  }
+  }, [])
 
   return (
     <div className="min-h-screen bg-white">
@@ -848,6 +857,7 @@ export default function Home() {
                 frontend={frontend} backend={backend} auth={auth} storage={storage} style={style} database={database}
                 docker={docker} setDocker={setDocker}
                 step={step} downloading={downloading} handleDownload={handleDownload} handleReset={handleReset} manifest={manifest}
+                generating={showOverlay} onGenerateReady={onOverlayReady}
                 supabaseUrl={supabaseUrl} setSupabaseUrl={setSupabaseUrl} supabaseKey={supabaseKey} setSupabaseKey={setSupabaseKey}
                 databaseUrl={databaseUrl} setDatabaseUrl={setDatabaseUrl}
                 appwriteEndpoint={appwriteEndpoint} setAppwriteEndpoint={setAppwriteEndpoint}
