@@ -223,6 +223,7 @@ function LivePreview({
   s3Endpoint, setS3Endpoint, s3AccessKey, setS3AccessKey, s3SecretKey, setS3SecretKey, s3BucketName, setS3BucketName, s3Region, setS3Region, s3PublicUrl, setS3PublicUrl,
   supabaseStorageUrl, setSupabaseStorageUrl, supabaseStorageKey, setSupabaseStorageKey,
   clerkPublishableKey, setClerkPublishableKey, clerkSecretKey, setClerkSecretKey,
+  auth0Domain, setAuth0Domain, auth0ClientId, setAuth0ClientId,
   mongodbUri, setMongodbUri,
   mysqlUrl, setMysqlUrl, dbHost, setDbHost, dbPort, setDbPort, dbUser, setDbUser, dbPassword, setDbPassword, dbName, setDbName,
 }: {
@@ -235,7 +236,7 @@ function LivePreview({
   r2Endpoint: string; setR2Endpoint: (v: string) => void; r2AccessKey: string; setR2AccessKey: (v: string) => void; r2SecretKey: string; setR2SecretKey: (v: string) => void; r2BucketName: string; setR2BucketName: (v: string) => void; r2PublicUrl: string; setR2PublicUrl: (v: string) => void
   s3Endpoint: string; setS3Endpoint: (v: string) => void; s3AccessKey: string; setS3AccessKey: (v: string) => void; s3SecretKey: string; setS3SecretKey: (v: string) => void; s3BucketName: string; setS3BucketName: (v: string) => void; s3Region: string; setS3Region: (v: string) => void; s3PublicUrl: string; setS3PublicUrl: (v: string) => void
   supabaseStorageUrl: string; setSupabaseStorageUrl: (v: string) => void; supabaseStorageKey: string; setSupabaseStorageKey: (v: string) => void
-  clerkPublishableKey: string; setClerkPublishableKey: (v: string) => void; clerkSecretKey: string; setClerkSecretKey: (v: string) => void
+  clerkPublishableKey: string; setClerkPublishableKey: (v: string) => void; clerkSecretKey: string; setClerkSecretKey: (v: string) => void; auth0Domain: string; setAuth0Domain: (v: string) => void; auth0ClientId: string; setAuth0ClientId: (v: string) => void
   mongodbUri: string; setMongodbUri: (v: string) => void
   mysqlUrl: string; setMysqlUrl: (v: string) => void; dbHost: string; setDbHost: (v: string) => void; dbPort: string; setDbPort: (v: string) => void; dbUser: string; setDbUser: (v: string) => void; dbPassword: string; setDbPassword: (v: string) => void; dbName: string; setDbName: (v: string) => void
 }) {
@@ -247,7 +248,7 @@ function LivePreview({
   const authName = auth ? manifest?.auths.find(a => a.id === auth)?.name : null
   const showOverlay = (step === 2 && (database === 'supabase' || database === 'appwrite' || database === 'postgres')) ||
     (step === 3 && (storage === 'r2' || storage === 's3' || storage === 'supabase')) ||
-    (step === 4 && auth === 'clerk')
+    (step === 4 && (auth === 'clerk' || auth === 'auth0'))
 
   const inputStyle = 'w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-black transition-colors bg-white'
   const labelStyle = 'block text-xs font-medium text-gray-500 mb-1'
@@ -414,6 +415,10 @@ function LivePreview({
               <div><label className={labelStyle}>Publishable Key</label><input type="text" value={clerkPublishableKey} onChange={e => setClerkPublishableKey(e.target.value)} placeholder="pk_test_..." className={inputStyle} />
               <div className="mt-3"><label className={labelStyle}>Secret Key</label><input type="text" value={clerkSecretKey} onChange={e => setClerkSecretKey(e.target.value)} placeholder="sk_test_..." className={inputStyle} /></div></div>
             )}
+            {step === 4 && auth === 'auth0' && (
+              <div><label className={labelStyle}>Domain</label><input type="text" value={auth0Domain} onChange={e => setAuth0Domain(e.target.value)} placeholder="dev-xxx.us.auth0.com" className={inputStyle} />
+              <div className="mt-3"><label className={labelStyle}>Client ID</label><input type="text" value={auth0ClientId} onChange={e => setAuth0ClientId(e.target.value)} placeholder="your-client-id" className={inputStyle} /></div></div>
+            )}
             <div className="flex flex-col items-center gap-3 mt-4">
               <div className="w-[70%] relative">
                 <button onClick={closeOverlay} className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-200 bg-black text-white hover:bg-gray-800 active:scale-[0.98]">
@@ -478,6 +483,8 @@ export default function Home() {
 
   const [clerkPublishableKey, setClerkPublishableKey] = useState('')
   const [clerkSecretKey, setClerkSecretKey] = useState('')
+  const [auth0Domain, setAuth0Domain] = useState('')
+  const [auth0ClientId, setAuth0ClientId] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [downloading, setDownloading] = useState(false)
@@ -543,6 +550,8 @@ export default function Home() {
     setSupabaseStorageKey('')
     setClerkPublishableKey('')
     setClerkSecretKey('')
+    setAuth0Domain('')
+    setAuth0ClientId('')
     setMongodbUri('')
     setMysqlUrl('')
     setDbHost('')
@@ -559,6 +568,7 @@ export default function Home() {
     const mappedBackend = ['express', 'flask'].includes(backend || '') ? backend : 'express'
     const mappedSqlite = database === 'sqlite'
     const mappedStorage = (storage === 'r2' || storage === 's3') ? storage : null
+    const mappedAuth = auth === 'auth0' ? 'auth0' : null
 
     try {
       const res = await fetch('/api/generate', {
@@ -569,6 +579,9 @@ export default function Home() {
           backend: mappedBackend,
           sqlite: mappedSqlite,
           storage: mappedStorage,
+          auth: mappedAuth,
+          auth0Domain: auth0Domain || undefined,
+          auth0ClientId: auth0ClientId || undefined,
           r2Endpoint: r2Endpoint || undefined,
           r2AccessKey: r2AccessKey || undefined,
           r2SecretKey: r2SecretKey || undefined,
@@ -848,6 +861,8 @@ export default function Home() {
                 supabaseStorageKey={supabaseStorageKey} setSupabaseStorageKey={setSupabaseStorageKey}
                 clerkPublishableKey={clerkPublishableKey} setClerkPublishableKey={setClerkPublishableKey}
                 clerkSecretKey={clerkSecretKey} setClerkSecretKey={setClerkSecretKey}
+                auth0Domain={auth0Domain} setAuth0Domain={setAuth0Domain}
+                auth0ClientId={auth0ClientId} setAuth0ClientId={setAuth0ClientId}
                 mongodbUri={mongodbUri} setMongodbUri={setMongodbUri}
                 mysqlUrl={mysqlUrl} setMysqlUrl={setMysqlUrl}
                 dbHost={dbHost} setDbHost={setDbHost} dbPort={dbPort} setDbPort={setDbPort}

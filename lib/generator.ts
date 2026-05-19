@@ -7,8 +7,9 @@ const TEMPLATES = path.join(process.cwd(), 'lib', 'templates')
 
 export async function generateProject(options: ProjectOptions): Promise<Buffer> {
   const zip = new JSZip()
-  const { frontend, backend, sqlite, storage } = options
+  const { frontend, backend, sqlite, storage, auth } = options
   const hasStorage = storage !== null
+  const hasAuth = auth === 'auth0'
 
   function addDir(dirRel: string, destPrefix: string) {
     const full = path.join(TEMPLATES, dirRel)
@@ -43,7 +44,12 @@ export async function generateProject(options: ProjectOptions): Promise<Buffer> 
     addDir(`storage/${storage}/${frontend}/client/src/pages`, 'client/src/pages')
   }
 
-  // 6. Dynamic files
+  // 6. Auth
+  if (hasAuth) {
+    addDir(`auth/auth0/${frontend}/client/src/pages`, 'client/src/pages')
+  }
+
+  // 7. Dynamic files
   zip.file('server/package.json', generateServerPkg(hasStorage))
   if (backend === 'express') {
     zip.file('server/src/index.ts', generateExpressIndex(sqlite, hasStorage))
@@ -52,13 +58,15 @@ export async function generateProject(options: ProjectOptions): Promise<Buffer> 
     zip.file('server/app.py', generateFlaskApp(sqlite, hasStorage))
   }
 
+  zip.file('client/package.json', generateClientPkg(frontend, hasAuth))
   if (frontend === 'react') {
-    zip.file('client/src/App.tsx', generateReactApp(sqlite, hasStorage))
+    zip.file('client/src/App.tsx', generateReactApp(sqlite, hasStorage, hasAuth))
   } else {
-    zip.file('client/src/router/index.ts', generateVueRouter(sqlite, hasStorage))
+    zip.file('client/src/main.ts', generateVueMain(hasAuth))
+    zip.file('client/src/router/index.ts', generateVueRouter(sqlite, hasStorage, hasAuth))
   }
 
-  // 7. .env files
+  // 8. .env files
   const envContent = generateEnv(options)
   zip.file('server/.env', envContent)
   zip.file('client/.env', envContent)
@@ -134,11 +142,26 @@ function generateFlaskApp(sqlite: boolean, storage: boolean): string {
   return lines.join('\n')
 }
 
-function generateReactApp(sqlite: boolean, storage: boolean): string {
+function generateClientPkg(frontend: string, auth: boolean): string {
+  if (frontend === 'react') {
+    const deps: Record<string, string> = { react: '^19.0.0', 'react-dom': '^19.0.0', 'react-router-dom': '^7.0.0' }
+    const devDeps: Record<string, string> = { '@vitejs/plugin-react': '^4.3.0', typescript: '^5.7.0', vite: '^6.0.0' }
+    if (auth) deps['@auth0/auth0-react'] = '^2.0.0'
+    return JSON.stringify({ name: 'client', private: true, type: 'module', scripts: { dev: 'vite', build: 'tsc -b && vite build' }, dependencies: deps, devDependencies: devDeps }, null, 2)
+  }
+  const deps: Record<string, string> = { vue: '^3.5.0', 'vue-router': '^4.5.0' }
+  const devDeps: Record<string, string> = { '@vitejs/plugin-vue': '^5.2.0', typescript: '^5.7.0', vite: '^6.0.0', 'vue-tsc': '^2.2.0' }
+  if (auth) deps['@auth0/auth0-vue'] = '^2.0.0'
+  return JSON.stringify({ name: 'client', private: true, type: 'module', scripts: { dev: 'vite', build: 'vue-tsc -b && vite build' }, dependencies: deps, devDependencies: devDeps }, null, 2)
+}
+
+function generateReactApp(sqlite: boolean, storage: boolean, auth: boolean): string {
   const lines: string[] = [
     `import { Routes, Route, Link } from 'react-router-dom'`,
     `import Home from './pages/Home'`,
   ]
+  const topLines: string[] = []
+  const afterRoutes: string[] = []
   const routes: string[] = [`<Route path="/" element={<Home />} />`]
   const nav: string[] = [`<Link to="/">Home</Link>`]
   if (sqlite) {
@@ -151,8 +174,32 @@ function generateReactApp(sqlite: boolean, storage: boolean): string {
     routes.push(`<Route path="/upload" element={<Upload />} />`, `<Route path="/files" element={<Files />} />`)
     nav.push(`<Link to="/upload">Upload</Link>`, `<Link to="/files">Files</Link>`)
   }
+  if (auth) {
+    topLines.push(`import { Auth0Provider } from '@auth0/auth0-react'`)
+    lines.push(`import Login from './pages/Login'`, `import Profile from './pages/Profile'`)
+    nav.push(`<Link to="/login">Login</Link>`, `<Link to="/profile">Profile</Link>`)
+    afterRoutes.push(``,
+      `function AuthLayout() {`,
+      `  return (`,
+      `    <Auth0Provider`,
+      `      domain={import.meta.env.VITE_AUTH0_DOMAIN}`,
+      `      clientId={import.meta.env.VITE_AUTH0_CLIENT_ID}`,
+      `      authorizationParams={{ redirect_uri: window.location.origin }}`,
+      `    >`,
+      `      <Outlet />`,
+      `    </Auth0Provider>`,
+      `  )`,
+      `}`,
+    )
+    routes.push(`<Route element={<AuthLayout />}>`,
+      `  <Route path="/login" element={<Login />} />`,
+      `  <Route path="/profile" element={<Profile />} />`,
+      `</Route>`)
+  }
   return [
+    ...topLines,
     ...lines, ``,
+    ...afterRoutes,
     `export default function App() {`,
     `  return (`,
     `    <div>`,
@@ -168,7 +215,24 @@ function generateReactApp(sqlite: boolean, storage: boolean): string {
   ].join('\n')
 }
 
-function generateVueRouter(sqlite: boolean, storage: boolean): string {
+function generateVueMain(auth: boolean): string {
+  const lines: string[] = [
+    `import { createApp } from 'vue'`,
+    `import App from './App.vue'`,
+    `import router from './router'`,
+  ]
+  if (auth) {
+    lines.push(`import { createAuth0 } from '@auth0/auth0-vue'`)
+  }
+  lines.push(``, `const app = createApp(App)`)
+  if (auth) {
+    lines.push(``, `app.use(createAuth0({`, `  domain: import.meta.env.VITE_AUTH0_DOMAIN,`, `  clientId: import.meta.env.VITE_AUTH0_CLIENT_ID,`, `  authorizationParams: { redirect_uri: window.location.origin },`, `}))`)
+  }
+  lines.push(``, `app.use(router)`, `app.mount('#app')`)
+  return lines.join('\n')
+}
+
+function generateVueRouter(sqlite: boolean, storage: boolean, auth: boolean): string {
   const lines: string[] = [
     `import { createRouter, createWebHistory } from 'vue-router'`,
     `import Home from '../pages/Home.vue'`,
@@ -181,6 +245,10 @@ function generateVueRouter(sqlite: boolean, storage: boolean): string {
   if (storage) {
     lines.push(`import Upload from '../pages/Upload.vue'`, `import Files from '../pages/Files.vue'`)
     routes.push(`{ path: '/upload', component: Upload },`, `{ path: '/files', component: Files },`)
+  }
+  if (auth) {
+    lines.push(`import Login from '../pages/Login.vue'`, `import Profile from '../pages/Profile.vue'`)
+    routes.push(`{ path: '/login', component: Login },`, `{ path: '/profile', component: Profile },`)
   }
   return [
     ...lines, ``,
@@ -201,6 +269,9 @@ function generateEnv(options: ProjectOptions): string {
   }
   if (options.storage === 's3') {
     lines.push(`# S3 Storage`, `S3_ENDPOINT=${options.s3Endpoint || ''}`, `S3_ACCESS_KEY=${options.s3AccessKey || ''}`, `S3_SECRET_KEY=${options.s3SecretKey || ''}`, `S3_BUCKET_NAME=${options.s3BucketName || ''}`, `S3_REGION=${options.s3Region || ''}`, `S3_PUBLIC_URL=${options.s3PublicUrl || ''}`)
+  }
+  if (options.auth === 'auth0') {
+    lines.push(`# Auth0`, `VITE_AUTH0_DOMAIN=${options.auth0Domain || ''}`, `VITE_AUTH0_CLIENT_ID=${options.auth0ClientId || ''}`)
   }
   return lines.join('\n') + '\n'
 }

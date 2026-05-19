@@ -34,7 +34,7 @@ export async function GET() {
     auths: [
       { id: 'none', name: 'None', available: true },
       { id: 'clerk', name: 'Clerk', available: false },
-      { id: 'auth0', name: 'Auth0', available: false },
+      { id: 'auth0', name: 'Auth0', available: true },
     ],
     styles: [
       { id: 'none', name: 'None', available: true },
