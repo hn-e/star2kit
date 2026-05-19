@@ -175,9 +175,10 @@ function generateReactApp(sqlite: boolean, storage: boolean, auth: boolean): str
     nav.push(`<Link to="/upload">Upload</Link>`, `<Link to="/files">Files</Link>`)
   }
   if (auth) {
+    lines[0] = `import { Routes, Route, Link, Outlet } from 'react-router-dom'`
     topLines.push(`import { Auth0Provider } from '@auth0/auth0-react'`)
-    lines.push(`import Login from './pages/Login'`, `import Profile from './pages/Profile'`)
-    nav.push(`<Link to="/login">Login</Link>`, `<Link to="/profile">Profile</Link>`)
+    lines.push(`import Login from './pages/Login'`)
+    nav.push(`<Link to="/login">Login</Link>`)
     afterRoutes.push(``,
       `function AuthLayout() {`,
       `  return (`,
@@ -193,7 +194,6 @@ function generateReactApp(sqlite: boolean, storage: boolean, auth: boolean): str
     )
     routes.push(`<Route element={<AuthLayout />}>`,
       `  <Route path="/login" element={<Login />} />`,
-      `  <Route path="/profile" element={<Profile />} />`,
       `</Route>`)
   }
   return [
@@ -247,8 +247,8 @@ function generateVueRouter(sqlite: boolean, storage: boolean, auth: boolean): st
     routes.push(`{ path: '/upload', component: Upload },`, `{ path: '/files', component: Files },`)
   }
   if (auth) {
-    lines.push(`import Login from '../pages/Login.vue'`, `import Profile from '../pages/Profile.vue'`)
-    routes.push(`{ path: '/login', component: Login },`, `{ path: '/profile', component: Profile },`)
+    lines.push(`import Login from '../pages/Login.vue'`)
+    routes.push(`{ path: '/login', component: Login },`)
   }
   return [
     ...lines, ``,
