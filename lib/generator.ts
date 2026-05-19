@@ -197,7 +197,7 @@ function generateVueRouter(sqlite: boolean, r2: boolean): string {
 function generateEnv(options: ProjectOptions): string {
   const lines: string[] = []
   if (options.storage === 'r2') {
-    lines.push(`# R2 Storage`, `R2_ENDPOINT=${options.r2Endpoint || ''}`, `R2_ACCESS_KEY=${options.r2AccessKey || ''}`, `R2_SECRET_KEY=${options.r2SecretKey || ''}`, `R2_BUCKET_NAME=${options.r2BucketName || ''}`, `R2_PUBLIC_URL=`)
+    lines.push(`# R2 Storage`, `R2_ENDPOINT=${options.r2Endpoint || ''}`, `R2_ACCESS_KEY=${options.r2AccessKey || ''}`, `R2_SECRET_KEY=${options.r2SecretKey || ''}`, `R2_BUCKET_NAME=${options.r2BucketName || ''}`, `R2_PUBLIC_URL=${options.r2PublicUrl || ''}`)
   }
   return lines.join('\n') + '\n'
 }

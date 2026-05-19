@@ -7,4 +7,5 @@ export interface ProjectOptions {
   r2AccessKey?: string
   r2SecretKey?: string
   r2BucketName?: string
+  r2PublicUrl?: string
 }

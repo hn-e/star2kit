@@ -219,7 +219,7 @@ function LivePreview({
   supabaseUrl, setSupabaseUrl, supabaseKey, setSupabaseKey,
   databaseUrl, setDatabaseUrl,
   appwriteEndpoint, setAppwriteEndpoint, appwriteProjectId, setAppwriteProjectId, appwriteApiKey, setAppwriteApiKey,
-  r2Endpoint, setR2Endpoint, r2AccessKey, setR2AccessKey, r2SecretKey, setR2SecretKey, r2BucketName, setR2BucketName,
+  r2Endpoint, setR2Endpoint, r2AccessKey, setR2AccessKey, r2SecretKey, setR2SecretKey, r2BucketName, setR2BucketName, r2PublicUrl, setR2PublicUrl,
   s3Endpoint, setS3Endpoint, s3AccessKey, setS3AccessKey, s3SecretKey, setS3SecretKey, s3BucketName, setS3BucketName, s3Region, setS3Region,
   supabaseStorageUrl, setSupabaseStorageUrl, supabaseStorageKey, setSupabaseStorageKey,
   clerkPublishableKey, setClerkPublishableKey, clerkSecretKey, setClerkSecretKey,
@@ -232,7 +232,7 @@ function LivePreview({
   supabaseUrl: string; setSupabaseUrl: (v: string) => void; supabaseKey: string; setSupabaseKey: (v: string) => void
   databaseUrl: string; setDatabaseUrl: (v: string) => void
   appwriteEndpoint: string; setAppwriteEndpoint: (v: string) => void; appwriteProjectId: string; setAppwriteProjectId: (v: string) => void; appwriteApiKey: string; setAppwriteApiKey: (v: string) => void
-  r2Endpoint: string; setR2Endpoint: (v: string) => void; r2AccessKey: string; setR2AccessKey: (v: string) => void; r2SecretKey: string; setR2SecretKey: (v: string) => void; r2BucketName: string; setR2BucketName: (v: string) => void
+  r2Endpoint: string; setR2Endpoint: (v: string) => void; r2AccessKey: string; setR2AccessKey: (v: string) => void; r2SecretKey: string; setR2SecretKey: (v: string) => void; r2BucketName: string; setR2BucketName: (v: string) => void; r2PublicUrl: string; setR2PublicUrl: (v: string) => void
   s3Endpoint: string; setS3Endpoint: (v: string) => void; s3AccessKey: string; setS3AccessKey: (v: string) => void; s3SecretKey: string; setS3SecretKey: (v: string) => void; s3BucketName: string; setS3BucketName: (v: string) => void; s3Region: string; setS3Region: (v: string) => void
   supabaseStorageUrl: string; setSupabaseStorageUrl: (v: string) => void; supabaseStorageKey: string; setSupabaseStorageKey: (v: string) => void
   clerkPublishableKey: string; setClerkPublishableKey: (v: string) => void; clerkSecretKey: string; setClerkSecretKey: (v: string) => void
@@ -395,7 +395,8 @@ function LivePreview({
               <div><label className={labelStyle}>Endpoint</label><input type="text" value={r2Endpoint} onChange={e => setR2Endpoint(e.target.value)} placeholder="https://..." className={inputStyle} />
               <div className="mt-3"><label className={labelStyle}>Access Key</label><input type="text" value={r2AccessKey} onChange={e => setR2AccessKey(e.target.value)} placeholder="your-access-key" className={inputStyle} /></div>
               <div className="mt-3"><label className={labelStyle}>Secret Key</label><input type="text" value={r2SecretKey} onChange={e => setR2SecretKey(e.target.value)} placeholder="your-secret-key" className={inputStyle} /></div>
-              <div className="mt-3"><label className={labelStyle}>Bucket Name</label><input type="text" value={r2BucketName} onChange={e => setR2BucketName(e.target.value)} placeholder="my-bucket" className={inputStyle} /></div></div>
+              <div className="mt-3"><label className={labelStyle}>Bucket Name</label><input type="text" value={r2BucketName} onChange={e => setR2BucketName(e.target.value)} placeholder="my-bucket" className={inputStyle} /></div>
+              <div className="mt-3"><label className={labelStyle}>Public URL</label><input type="text" value={r2PublicUrl} onChange={e => setR2PublicUrl(e.target.value)} placeholder="https://pub-xxxxx.r2.dev" className={inputStyle} /></div></div>
             )}
             {step === 3 && storage === 's3' && (
               <div><label className={labelStyle}>Endpoint</label><input type="text" value={s3Endpoint} onChange={e => setS3Endpoint(e.target.value)} placeholder="https://s3.amazonaws.com" className={inputStyle} />
@@ -457,6 +458,7 @@ export default function Home() {
   const [r2AccessKey, setR2AccessKey] = useState('')
   const [r2SecretKey, setR2SecretKey] = useState('')
   const [r2BucketName, setR2BucketName] = useState('')
+  const [r2PublicUrl, setR2PublicUrl] = useState('')
   const [s3Endpoint, setS3Endpoint] = useState('')
   const [s3AccessKey, setS3AccessKey] = useState('')
   const [s3SecretKey, setS3SecretKey] = useState('')
@@ -528,6 +530,7 @@ export default function Home() {
     setR2AccessKey('')
     setR2SecretKey('')
     setR2BucketName('')
+    setR2PublicUrl('')
     setS3Endpoint('')
     setS3AccessKey('')
     setS3SecretKey('')
@@ -567,6 +570,7 @@ export default function Home() {
           r2AccessKey: r2AccessKey || undefined,
           r2SecretKey: r2SecretKey || undefined,
           r2BucketName: r2BucketName || undefined,
+          r2PublicUrl: r2PublicUrl || undefined,
         }),
       })
 
@@ -827,7 +831,7 @@ export default function Home() {
                 appwriteProjectId={appwriteProjectId} setAppwriteProjectId={setAppwriteProjectId}
                 appwriteApiKey={appwriteApiKey} setAppwriteApiKey={setAppwriteApiKey}
                 r2Endpoint={r2Endpoint} setR2Endpoint={setR2Endpoint} r2AccessKey={r2AccessKey} setR2AccessKey={setR2AccessKey}
-                r2SecretKey={r2SecretKey} setR2SecretKey={setR2SecretKey} r2BucketName={r2BucketName} setR2BucketName={setR2BucketName}
+                r2SecretKey={r2SecretKey} setR2SecretKey={setR2SecretKey} r2BucketName={r2BucketName} setR2BucketName={setR2BucketName} r2PublicUrl={r2PublicUrl} setR2PublicUrl={setR2PublicUrl}
                 s3Endpoint={s3Endpoint} setS3Endpoint={setS3Endpoint} s3AccessKey={s3AccessKey} setS3AccessKey={setS3AccessKey}
                 s3SecretKey={s3SecretKey} setS3SecretKey={setS3SecretKey} s3BucketName={s3BucketName} setS3BucketName={setS3BucketName}
                 s3Region={s3Region} setS3Region={setS3Region}
