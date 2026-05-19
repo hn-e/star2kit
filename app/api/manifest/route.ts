@@ -28,7 +28,7 @@ export async function GET() {
       { id: 'none', name: 'None', available: true },
       { id: 'local', name: 'Local', available: false },
       { id: 'r2', name: 'Cloudflare R2', available: true },
-      { id: 's3', name: 'AWS S3', available: false },
+      { id: 's3', name: 'AWS S3', available: true },
       { id: 'supabase', name: 'Supabase', available: false },
     ],
     auths: [
