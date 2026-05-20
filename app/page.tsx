@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { SiJavascript, SiJquery, SiReact, SiVuedotjs, SiSvelte, SiSolid, SiFlask, SiExpress, SiFastapi, SiNextdotjs, SiDjango, SiSqlite, SiSupabase, SiPostgresql, SiAppwrite, SiMysql, SiMongodb, SiTailwindcss, SiBootstrap, SiBulma, SiClerk, SiMailgun, SiMailtrap, SiSendgrid, SiMailchimp } from 'react-icons/si'
+import { SiJavascript, SiJquery, SiReact, SiVuedotjs, SiSvelte, SiSolid, SiFlask, SiExpress, SiFastapi, SiNextdotjs, SiDjango, SiSqlite, SiSupabase, SiPostgresql, SiAppwrite, SiMysql, SiMongodb, SiTailwindcss, SiBootstrap, SiBulma, SiClerk, SiMailgun, SiMailtrap, SiSendgrid, SiMailchimp, SiStripe, SiRazorpay, SiPaypal } from 'react-icons/si'
 import GenerateOverlay from '@/lib/generate-overlay'
 import { FaAws, FaCloudflare } from 'react-icons/fa'
 
@@ -32,6 +32,10 @@ const BRAND: Record<string, { hex: string; name: string }> = {
   basic: { hex: '#64748B', name: 'Basic CSS' },
   clerk: { hex: '#6C47FF', name: 'Clerk' },
   auth0: { hex: '#EB5424', name: 'Auth0' },
+  stripe: { hex: '#635BFF', name: 'Stripe' },
+  razorpay: { hex: '#3399FF', name: 'Razorpay' },
+  cashfree: { hex: '#1890FF', name: 'Cashfree' },
+  paypal: { hex: '#003087', name: 'PayPal' },
   mailgun: { hex: '#F06B66', name: 'Mailgun' },
   mailtrap: { hex: '#22D172', name: 'Mailtrap' },
   sendgrid: { hex: '#1F82E2', name: 'SendGrid' },
@@ -46,6 +50,7 @@ const STEPS = [
   { id: 'storage', title: 'Storage' },
   { id: 'auth', title: 'Auth' },
   { id: 'mail', title: 'Mail' },
+  { id: 'payments', title: 'Payments' },
   { id: 'style', title: 'Style' },
 ]
 
@@ -80,6 +85,10 @@ const LOGOS: Record<string, React.ReactNode> = {
   mailtrap: <SiMailtrap className="w-7 h-7" />,
   sendgrid: <SiSendgrid className="w-7 h-7" />,
   mailchimp: <SiMailchimp className="w-7 h-7" />,
+  stripe: <SiStripe className="w-7 h-7" />,
+  razorpay: <SiRazorpay className="w-7 h-7" />,
+  cashfree: <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" /></svg>,
+  paypal: <SiPaypal className="w-7 h-7" />,
   none: <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>,
 }
 
@@ -95,6 +104,7 @@ interface Manifest {
   databases: ManifestItem[]
   storages: ManifestItem[]
   mails: ManifestItem[]
+  payments: ManifestItem[]
   auths: ManifestItem[]
   styles: ManifestItem[]
 }
@@ -225,7 +235,7 @@ function ExpandRow({ show, children }: { show: boolean; children: React.ReactNod
 }
 
 function LivePreview({
-  frontend, backend, auth, mail, style, database, storage, docker, setDocker,
+  frontend, backend, auth, mail, payments, style, database, storage, docker, setDocker,
   step, downloading, handleDownload, handleReset, manifest,
   generating, onGenerateReady, treeData,
   supabaseUrl, setSupabaseUrl, supabaseKey, setSupabaseKey,
@@ -238,10 +248,14 @@ function LivePreview({
   auth0Domain, setAuth0Domain, auth0ClientId, setAuth0ClientId,
   mailgunApiKey, setMailgunApiKey, mailgunDomain, setMailgunDomain, mailtrapApiToken, setMailtrapApiToken,
   sendgridApiKey, setSendgridApiKey, mailchimpApiKey, setMailchimpApiKey, mailchimpServerPrefix, setMailchimpServerPrefix,
+  stripePublishableKey, setStripePublishableKey, stripeSecretKey, setStripeSecretKey,
+  razorpayKeyId, setRazorpayKeyId, razorpayKeySecret, setRazorpayKeySecret,
+  cashfreeAppId, setCashfreeAppId, cashfreeSecretKey, setCashfreeSecretKey,
+  paypalClientId, setPaypalClientId, paypalClientSecret, setPaypalClientSecret,
   mongodbUri, setMongodbUri,
   mysqlUrl, setMysqlUrl, dbHost, setDbHost, dbPort, setDbPort, dbUser, setDbUser, dbPassword, setDbPassword, dbName, setDbName,
 }: {
-  frontend: string | null; backend: string | null; auth: string | null; mail: string | null; style: string | null; database: string | null; storage: string | null
+  frontend: string | null; backend: string | null; auth: string | null; mail: string | null; payments: string | null; style: string | null; database: string | null; storage: string | null
   docker: boolean; setDocker: (v: boolean) => void
   step: number; downloading: boolean; handleDownload: () => void; handleReset: () => void; manifest: Manifest | null
   generating: boolean; onGenerateReady: () => void; treeData: unknown
@@ -251,7 +265,7 @@ function LivePreview({
   r2Endpoint: string; setR2Endpoint: (v: string) => void; r2AccessKey: string; setR2AccessKey: (v: string) => void; r2SecretKey: string; setR2SecretKey: (v: string) => void; r2BucketName: string; setR2BucketName: (v: string) => void; r2PublicUrl: string; setR2PublicUrl: (v: string) => void
   s3Endpoint: string; setS3Endpoint: (v: string) => void; s3AccessKey: string; setS3AccessKey: (v: string) => void; s3SecretKey: string; setS3SecretKey: (v: string) => void; s3BucketName: string; setS3BucketName: (v: string) => void; s3Region: string; setS3Region: (v: string) => void; s3PublicUrl: string; setS3PublicUrl: (v: string) => void
   supabaseStorageUrl: string; setSupabaseStorageUrl: (v: string) => void; supabaseStorageKey: string; setSupabaseStorageKey: (v: string) => void
-  clerkPublishableKey: string; setClerkPublishableKey: (v: string) => void; clerkSecretKey: string; setClerkSecretKey: (v: string) => void; auth0Domain: string; setAuth0Domain: (v: string) => void; auth0ClientId: string; setAuth0ClientId: (v: string) => void; mailgunApiKey: string; setMailgunApiKey: (v: string) => void; mailgunDomain: string; setMailgunDomain: (v: string) => void; mailtrapApiToken: string; setMailtrapApiToken: (v: string) => void; sendgridApiKey: string; setSendgridApiKey: (v: string) => void; mailchimpApiKey: string; setMailchimpApiKey: (v: string) => void; mailchimpServerPrefix: string; setMailchimpServerPrefix: (v: string) => void
+  clerkPublishableKey: string; setClerkPublishableKey: (v: string) => void; clerkSecretKey: string; setClerkSecretKey: (v: string) => void; auth0Domain: string; setAuth0Domain: (v: string) => void; auth0ClientId: string; setAuth0ClientId: (v: string) => void; mailgunApiKey: string; setMailgunApiKey: (v: string) => void; mailgunDomain: string; setMailgunDomain: (v: string) => void; mailtrapApiToken: string; setMailtrapApiToken: (v: string) => void; sendgridApiKey: string; setSendgridApiKey: (v: string) => void; mailchimpApiKey: string; setMailchimpApiKey: (v: string) => void; mailchimpServerPrefix: string; setMailchimpServerPrefix: (v: string) => void; stripePublishableKey: string; setStripePublishableKey: (v: string) => void; stripeSecretKey: string; setStripeSecretKey: (v: string) => void; razorpayKeyId: string; setRazorpayKeyId: (v: string) => void; razorpayKeySecret: string; setRazorpayKeySecret: (v: string) => void; cashfreeAppId: string; setCashfreeAppId: (v: string) => void; cashfreeSecretKey: string; setCashfreeSecretKey: (v: string) => void; paypalClientId: string; setPaypalClientId: (v: string) => void; paypalClientSecret: string; setPaypalClientSecret: (v: string) => void
   mongodbUri: string; setMongodbUri: (v: string) => void
   mysqlUrl: string; setMysqlUrl: (v: string) => void; dbHost: string; setDbHost: (v: string) => void; dbPort: string; setDbPort: (v: string) => void; dbUser: string; setDbUser: (v: string) => void; dbPassword: string; setDbPassword: (v: string) => void; dbName: string; setDbName: (v: string) => void
 }) {
@@ -262,10 +276,12 @@ function LivePreview({
   const storageName = storage ? manifest?.storages.find(s => s.id === storage)?.name : null
   const authName = auth ? manifest?.auths.find(a => a.id === auth)?.name : null
   const mailName = mail ? manifest?.mails.find(m => m.id === mail)?.name : null
+  const paymentsName = payments ? manifest?.payments.find(p => p.id === payments)?.name : null
   const showOverlay = (step === 2 && (database === 'supabase' || database === 'appwrite' || database === 'postgres')) ||
     (step === 3 && (storage === 'r2' || storage === 's3' || storage === 'supabase')) ||
     (step === 4 && (auth === 'clerk' || auth === 'auth0')) ||
-    (step === 5 && (mail === 'mailgun' || mail === 'mailtrap' || mail === 'sendgrid' || mail === 'mailchimp'))
+    (step === 5 && (mail === 'mailgun' || mail === 'mailtrap' || mail === 'sendgrid' || mail === 'mailchimp')) ||
+    (step === 6 && (payments === 'stripe' || payments === 'razorpay' || payments === 'cashfree' || payments === 'paypal'))
 
   const inputStyle = 'w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-black transition-colors bg-white'
   const labelStyle = 'block text-xs font-medium text-gray-500 mb-1'
@@ -278,7 +294,7 @@ function LivePreview({
     setOverlayVisible(false)
     const t = setTimeout(() => setOverlayVisible(true), 500)
     return () => clearTimeout(t)
-  }, [database, storage, auth, mail])
+  }, [database, storage, auth, mail, payments])
   const closeOverlay = () => {
     setOverlayClosing(true)
     setTimeout(() => { setOverlayOpen(false); setOverlayClosing(false) }, 300)
@@ -336,6 +352,13 @@ function LivePreview({
             <div className="w-px h-6 bg-gray-300" />
           </ExpandSlot>
 
+          <div style={{ gridColumn: 2, gridRow: 3 }}>
+            <ExpandRow show={!!payments && payments !== 'none'}>
+              <SlotPreview selected brand={BRAND[payments || '']?.hex} logo={LOGOS[payments || '']} name={paymentsName} />
+              <div className="w-8 h-px bg-gray-300" style={{ marginTop: '-10px' }} />
+            </ExpandRow>
+          </div>
+
           <div style={{ gridColumn: 2, gridRow: 5 }}>
             <ExpandRow show={!!storage && storage !== 'none'}>
               <SlotPreview selected brand={BRAND[storage || '']?.hex} logo={LOGOS[storage || '']} name={storageName} />
@@ -350,7 +373,7 @@ function LivePreview({
       </div>
 
       <div className="mt-auto pt-6 min-h-25 flex flex-col items-center justify-end">
-        {step === 6 && style !== null ? (
+        {step === 7 && style !== null ? (
           <div className="flex flex-col items-center gap-3 w-full" style={{ animation: 'fadeSlideUp 0.4s ease-out' }}>
             <button
               onClick={handleDownload}
@@ -460,6 +483,22 @@ function LivePreview({
               <div><label className={labelStyle}>API Key</label><input type="text" value={mailchimpApiKey} onChange={e => setMailchimpApiKey(e.target.value)} placeholder="your-api-key" className={inputStyle} />
               <div className="mt-3"><label className={labelStyle}>Server Prefix</label><input type="text" value={mailchimpServerPrefix} onChange={e => setMailchimpServerPrefix(e.target.value)} placeholder="us1" className={inputStyle} /></div></div>
             )}
+            {step === 6 && payments === 'stripe' && (
+              <div><label className={labelStyle}>Publishable Key</label><input type="text" value={stripePublishableKey} onChange={e => setStripePublishableKey(e.target.value)} placeholder="pk_test_..." className={inputStyle} />
+              <div className="mt-3"><label className={labelStyle}>Secret Key</label><input type="text" value={stripeSecretKey} onChange={e => setStripeSecretKey(e.target.value)} placeholder="sk_test_..." className={inputStyle} /></div></div>
+            )}
+            {step === 6 && payments === 'razorpay' && (
+              <div><label className={labelStyle}>Key ID</label><input type="text" value={razorpayKeyId} onChange={e => setRazorpayKeyId(e.target.value)} placeholder="rzp_test_..." className={inputStyle} />
+              <div className="mt-3"><label className={labelStyle}>Key Secret</label><input type="text" value={razorpayKeySecret} onChange={e => setRazorpayKeySecret(e.target.value)} placeholder="your-key-secret" className={inputStyle} /></div></div>
+            )}
+            {step === 6 && payments === 'cashfree' && (
+              <div><label className={labelStyle}>App ID</label><input type="text" value={cashfreeAppId} onChange={e => setCashfreeAppId(e.target.value)} placeholder="your-app-id" className={inputStyle} />
+              <div className="mt-3"><label className={labelStyle}>Secret Key</label><input type="text" value={cashfreeSecretKey} onChange={e => setCashfreeSecretKey(e.target.value)} placeholder="your-secret-key" className={inputStyle} /></div></div>
+            )}
+            {step === 6 && payments === 'paypal' && (
+              <div><label className={labelStyle}>Client ID</label><input type="text" value={paypalClientId} onChange={e => setPaypalClientId(e.target.value)} placeholder="your-client-id" className={inputStyle} />
+              <div className="mt-3"><label className={labelStyle}>Client Secret</label><input type="text" value={paypalClientSecret} onChange={e => setPaypalClientSecret(e.target.value)} placeholder="your-client-secret" className={inputStyle} /></div></div>
+            )}
             <div className="flex flex-col items-center gap-3 mt-4">
               <div className="w-[70%] relative">
                 <button onClick={closeOverlay} className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-200 bg-black text-white hover:bg-gray-800 active:scale-[0.98]">
@@ -497,6 +536,7 @@ export default function Home() {
   const [storage, setStorage] = useState<string | null>(null)
   const [auth, setAuth] = useState<string | null>(null)
   const [mail, setMail] = useState<string | null>(null)
+  const [payments, setPayments] = useState<string | null>(null)
   const [style, setStyle] = useState<string | null>(null)
   const [database, setDatabase] = useState<string | null>(null)
   const [supabaseUrl, setSupabaseUrl] = useState('')
@@ -536,6 +576,14 @@ export default function Home() {
   const [sendgridApiKey, setSendgridApiKey] = useState('')
   const [mailchimpApiKey, setMailchimpApiKey] = useState('')
   const [mailchimpServerPrefix, setMailchimpServerPrefix] = useState('')
+  const [stripePublishableKey, setStripePublishableKey] = useState('')
+  const [stripeSecretKey, setStripeSecretKey] = useState('')
+  const [razorpayKeyId, setRazorpayKeyId] = useState('')
+  const [razorpayKeySecret, setRazorpayKeySecret] = useState('')
+  const [cashfreeAppId, setCashfreeAppId] = useState('')
+  const [cashfreeSecretKey, setCashfreeSecretKey] = useState('')
+  const [paypalClientId, setPaypalClientId] = useState('')
+  const [paypalClientSecret, setPaypalClientSecret] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [downloading, setDownloading] = useState(false)
@@ -567,11 +615,12 @@ export default function Home() {
     if (step === 3) return storage !== null
     if (step === 4) return auth !== null
     if (step === 5) return mail !== null
+    if (step === 6) return payments !== null
     return false
   }
 
   const handleNext = () => {
-    if (step < 6) setStep(s => s + 1)
+    if (step < 7) setStep(s => s + 1)
   }
 
   const handleBack = () => {
@@ -586,6 +635,7 @@ export default function Home() {
     setStorage(null)
     setAuth(null)
     setMail(null)
+    setPayments(null)
     setStyle(null)
     setDatabase(null)
     setSupabaseUrl('')
@@ -614,6 +664,14 @@ export default function Home() {
     setSendgridApiKey('')
     setMailchimpApiKey('')
     setMailchimpServerPrefix('')
+    setStripePublishableKey('')
+    setStripeSecretKey('')
+    setRazorpayKeyId('')
+    setRazorpayKeySecret('')
+    setCashfreeAppId('')
+    setCashfreeSecretKey('')
+    setPaypalClientId('')
+    setPaypalClientSecret('')
     setMongodbUri('')
     setMysqlUrl('')
     setDbHost('')
@@ -904,6 +962,35 @@ export default function Home() {
                         <span className="text-gray-300 mx-1">+</span>
                         {manifest?.backends.find(b => b.id === backend)?.name}
                       </div>
+                      <h2 className="text-xl font-semibold text-gray-900">Choose a payment provider</h2>
+                      <p className="text-sm text-gray-500 mt-1">Optionally add payment processing.</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      {manifest?.payments.map((p, i) => (
+                        <div key={p.id} style={fadeIn(i)}>
+                          <OptionCard
+                            id={p.id} name={p.name}
+                            selected={payments === p.id} onSelect={setPayments}
+                            logo={LOGOS[p.id] || <div className="w-5 h-5 rounded-full border border-gray-300" />}
+                            available={p.available}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {step === 7 && (
+                  <div>
+                    <div className="mb-6">
+                      <div className="inline-flex items-center gap-2 px-3 py-1.5 border border-gray-200 text-gray-700 text-sm font-medium rounded-lg mb-3">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                        </svg>
+                        {manifest?.frontends.find(f => f.id === frontend)?.name}
+                        <span className="text-gray-300 mx-1">+</span>
+                        {manifest?.backends.find(b => b.id === backend)?.name}
+                      </div>
                       <h2 className="text-xl font-semibold text-gray-900">Choose a style</h2>
                       <p className="text-sm text-gray-500 mt-1">Optionally add a CSS framework.</p>
                     </div>
@@ -940,7 +1027,7 @@ export default function Home() {
                   </svg>
                   Back
                 </button>
-                {step < 6 && (
+                {step < 7 && (
                   <button
                     onClick={handleNext}
                     disabled={!canGoNext()}
@@ -963,7 +1050,7 @@ export default function Home() {
 
             <div className="w-full lg:w-1/2">
               <LivePreview
-                frontend={frontend} backend={backend} auth={auth} mail={mail} storage={storage} style={style} database={database}
+                frontend={frontend} backend={backend} auth={auth} mail={mail} payments={payments} storage={storage} style={style} database={database}
                 docker={docker} setDocker={setDocker}
                 step={step} downloading={downloading} handleDownload={handleDownload} handleReset={handleReset} manifest={manifest}
                 generating={showOverlay} onGenerateReady={onOverlayReady} treeData={treeData}
@@ -987,6 +1074,10 @@ export default function Home() {
                 mailtrapApiToken={mailtrapApiToken} setMailtrapApiToken={setMailtrapApiToken}
                 sendgridApiKey={sendgridApiKey} setSendgridApiKey={setSendgridApiKey}
                 mailchimpApiKey={mailchimpApiKey} setMailchimpApiKey={setMailchimpApiKey} mailchimpServerPrefix={mailchimpServerPrefix} setMailchimpServerPrefix={setMailchimpServerPrefix}
+                stripePublishableKey={stripePublishableKey} setStripePublishableKey={setStripePublishableKey} stripeSecretKey={stripeSecretKey} setStripeSecretKey={setStripeSecretKey}
+                razorpayKeyId={razorpayKeyId} setRazorpayKeyId={setRazorpayKeyId} razorpayKeySecret={razorpayKeySecret} setRazorpayKeySecret={setRazorpayKeySecret}
+                cashfreeAppId={cashfreeAppId} setCashfreeAppId={setCashfreeAppId} cashfreeSecretKey={cashfreeSecretKey} setCashfreeSecretKey={setCashfreeSecretKey}
+                paypalClientId={paypalClientId} setPaypalClientId={setPaypalClientId} paypalClientSecret={paypalClientSecret} setPaypalClientSecret={setPaypalClientSecret}
                 mongodbUri={mongodbUri} setMongodbUri={setMongodbUri}
                 mysqlUrl={mysqlUrl} setMysqlUrl={setMysqlUrl}
                 dbHost={dbHost} setDbHost={setDbHost} dbPort={dbPort} setDbPort={setDbPort}

@@ -38,6 +38,13 @@ export async function GET() {
       { id: 'sendgrid', name: 'SendGrid', available: false },
       { id: 'mailchimp', name: 'Mailchimp', available: false },
     ],
+    payments: [
+      { id: 'none', name: 'None', available: true },
+      { id: 'stripe', name: 'Stripe', available: false },
+      { id: 'razorpay', name: 'Razorpay', available: false },
+      { id: 'cashfree', name: 'Cashfree', available: false },
+      { id: 'paypal', name: 'PayPal', available: false },
+    ],
     auths: [
       { id: 'none', name: 'None', available: true },
       { id: 'clerk', name: 'Clerk', available: true },
