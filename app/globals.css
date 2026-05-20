@@ -27,6 +27,12 @@
 .animate-overlay-enter {
   animation: overlay-enter 0.35s ease-out;
 }
+.scrollbar-none {
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
 @keyframes scan-bar {
   0% { background-position: -60px 0; }
   50% { background-position: calc(100% + 60px) 0; }

@@ -634,6 +634,16 @@ export default function Home() {
     }
   }, [])
 
+  // Safety timeout: if the overlay is open for 10s without onReady firing,
+  // auto-trigger the download so the user is never stuck.
+  useEffect(() => {
+    if (!showOverlay) return
+    const t = setTimeout(() => {
+      onOverlayReady()
+    }, 30000)
+    return () => clearTimeout(t)
+  }, [showOverlay]) // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
     <div className="min-h-screen bg-white">
       <div className="max-w-none mx-auto px-8 sm:px-12 lg:px-16 py-8 sm:py-12">

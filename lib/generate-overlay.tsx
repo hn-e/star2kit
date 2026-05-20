@@ -46,7 +46,7 @@ function assignTreeDelays(nodes: TreeNode[], parentPath = '', parentDelay = 0): 
   const result: { path: string; type: 'folder' | 'file'; delay: number }[] = []
   for (const node of nodes) {
     const currentPath = parentPath ? `${parentPath}/${node.name}` : node.name
-    const nodeDelay = parentDelay + 2000 + Math.random() * 2000
+    const nodeDelay = parentDelay + 1000 + Math.random() * 1500
     result.push({ path: currentPath, type: node.type, delay: nodeDelay })
     if (node.children) result.push(...assignTreeDelays(node.children, currentPath, nodeDelay))
   }
@@ -134,7 +134,7 @@ export default function GenerateOverlay({ open, onReady, tree: propTree }: Gener
         setFinalMsg(msgs[0])
         let acc = 0
         for (let i = 1; i < msgs.length; i++) {
-          const delay = 100 + Math.random() * 2000
+          const delay = 100 + Math.random() * 1500
           acc += delay
           const t = setTimeout(() => setFinalMsg(msgs[i]), acc)
           timers.push(t)
@@ -181,7 +181,7 @@ export default function GenerateOverlay({ open, onReady, tree: propTree }: Gener
         <span className="text-xs text-gray-400 font-mono ml-2">my-project — File Tree</span>
       </div>
 
-      <div className="p-3 font-mono text-[13px] flex-1 overflow-y-auto min-h-0">
+      <div className="p-3 font-mono text-[13px] flex-1 overflow-y-auto min-h-0 scrollbar-none">
         <div className="text-[11px] text-gray-400 mb-2 px-2">
           {!done && !finalizing ? (
             <span className="text-green-600 font-medium">Generating project structure...</span>
@@ -220,9 +220,7 @@ export default function GenerateOverlay({ open, onReady, tree: propTree }: Gener
         })}
 
         {!done && revealedOrder.length < total && (
-          <div className="flex items-center gap-1.5 px-2 py-0.5" style={{ paddingLeft: '16px' }}>
-            <span className="w-2 h-4 bg-gray-400 animate-pulse" />
-          </div>
+          <div className="h-4" />
         )}
       </div>
 
