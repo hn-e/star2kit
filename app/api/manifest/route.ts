@@ -31,6 +31,13 @@ export async function GET() {
       { id: 's3', name: 'AWS S3', available: true },
       { id: 'supabase', name: 'Supabase', available: false },
     ],
+    mails: [
+      { id: 'none', name: 'None', available: true },
+      { id: 'mailgun', name: 'Mailgun', available: false },
+      { id: 'mailtrap', name: 'Mailtrap', available: false },
+      { id: 'sendgrid', name: 'SendGrid', available: false },
+      { id: 'mailchimp', name: 'Mailchimp', available: false },
+    ],
     auths: [
       { id: 'none', name: 'None', available: true },
       { id: 'clerk', name: 'Clerk', available: true },

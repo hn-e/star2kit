@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { SiJavascript, SiJquery, SiReact, SiVuedotjs, SiSvelte, SiSolid, SiFlask, SiExpress, SiFastapi, SiNextdotjs, SiDjango, SiSqlite, SiSupabase, SiPostgresql, SiAppwrite, SiMysql, SiMongodb, SiTailwindcss, SiBootstrap, SiBulma, SiClerk } from 'react-icons/si'
+import { SiJavascript, SiJquery, SiReact, SiVuedotjs, SiSvelte, SiSolid, SiFlask, SiExpress, SiFastapi, SiNextdotjs, SiDjango, SiSqlite, SiSupabase, SiPostgresql, SiAppwrite, SiMysql, SiMongodb, SiTailwindcss, SiBootstrap, SiBulma, SiClerk, SiMailgun, SiMailtrap, SiSendgrid, SiMailchimp } from 'react-icons/si'
 import GenerateOverlay from '@/lib/generate-overlay'
 import { FaAws, FaCloudflare } from 'react-icons/fa'
 
@@ -32,6 +32,10 @@ const BRAND: Record<string, { hex: string; name: string }> = {
   basic: { hex: '#64748B', name: 'Basic CSS' },
   clerk: { hex: '#6C47FF', name: 'Clerk' },
   auth0: { hex: '#EB5424', name: 'Auth0' },
+  mailgun: { hex: '#F06B66', name: 'Mailgun' },
+  mailtrap: { hex: '#22D172', name: 'Mailtrap' },
+  sendgrid: { hex: '#1F82E2', name: 'SendGrid' },
+  mailchimp: { hex: '#FFE01B', name: 'Mailchimp' },
   none: { hex: '#94a3b8', name: 'None' },
 }
 
@@ -41,6 +45,7 @@ const STEPS = [
   { id: 'database', title: 'Database' },
   { id: 'storage', title: 'Storage' },
   { id: 'auth', title: 'Auth' },
+  { id: 'mail', title: 'Mail' },
   { id: 'style', title: 'Style' },
 ]
 
@@ -71,6 +76,10 @@ const LOGOS: Record<string, React.ReactNode> = {
   clerk: <SiClerk className="w-6 h-6" />,
   auth0: <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L3 7v6c0 5.25 3.83 10.25 9 11.5 5.17-1.25 9-6.25 9-11.5V7l-9-5z"/></svg>,
   postgres: <SiPostgresql className="w-7 h-7" />,
+  mailgun: <SiMailgun className="w-7 h-7" />,
+  mailtrap: <SiMailtrap className="w-7 h-7" />,
+  sendgrid: <SiSendgrid className="w-7 h-7" />,
+  mailchimp: <SiMailchimp className="w-7 h-7" />,
   none: <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>,
 }
 
@@ -85,6 +94,7 @@ interface Manifest {
   backends: ManifestItem[]
   databases: ManifestItem[]
   storages: ManifestItem[]
+  mails: ManifestItem[]
   auths: ManifestItem[]
   styles: ManifestItem[]
 }
@@ -215,7 +225,7 @@ function ExpandRow({ show, children }: { show: boolean; children: React.ReactNod
 }
 
 function LivePreview({
-  frontend, backend, auth, style, database, storage, docker, setDocker,
+  frontend, backend, auth, mail, style, database, storage, docker, setDocker,
   step, downloading, handleDownload, handleReset, manifest,
   generating, onGenerateReady, treeData,
   supabaseUrl, setSupabaseUrl, supabaseKey, setSupabaseKey,
@@ -226,10 +236,12 @@ function LivePreview({
   supabaseStorageUrl, setSupabaseStorageUrl, supabaseStorageKey, setSupabaseStorageKey,
   clerkPublishableKey, setClerkPublishableKey, clerkSecretKey, setClerkSecretKey,
   auth0Domain, setAuth0Domain, auth0ClientId, setAuth0ClientId,
+  mailgunApiKey, setMailgunApiKey, mailgunDomain, setMailgunDomain, mailtrapApiToken, setMailtrapApiToken,
+  sendgridApiKey, setSendgridApiKey, mailchimpApiKey, setMailchimpApiKey, mailchimpServerPrefix, setMailchimpServerPrefix,
   mongodbUri, setMongodbUri,
   mysqlUrl, setMysqlUrl, dbHost, setDbHost, dbPort, setDbPort, dbUser, setDbUser, dbPassword, setDbPassword, dbName, setDbName,
 }: {
-  frontend: string | null; backend: string | null; auth: string | null; style: string | null; database: string | null; storage: string | null
+  frontend: string | null; backend: string | null; auth: string | null; mail: string | null; style: string | null; database: string | null; storage: string | null
   docker: boolean; setDocker: (v: boolean) => void
   step: number; downloading: boolean; handleDownload: () => void; handleReset: () => void; manifest: Manifest | null
   generating: boolean; onGenerateReady: () => void; treeData: unknown
@@ -239,7 +251,7 @@ function LivePreview({
   r2Endpoint: string; setR2Endpoint: (v: string) => void; r2AccessKey: string; setR2AccessKey: (v: string) => void; r2SecretKey: string; setR2SecretKey: (v: string) => void; r2BucketName: string; setR2BucketName: (v: string) => void; r2PublicUrl: string; setR2PublicUrl: (v: string) => void
   s3Endpoint: string; setS3Endpoint: (v: string) => void; s3AccessKey: string; setS3AccessKey: (v: string) => void; s3SecretKey: string; setS3SecretKey: (v: string) => void; s3BucketName: string; setS3BucketName: (v: string) => void; s3Region: string; setS3Region: (v: string) => void; s3PublicUrl: string; setS3PublicUrl: (v: string) => void
   supabaseStorageUrl: string; setSupabaseStorageUrl: (v: string) => void; supabaseStorageKey: string; setSupabaseStorageKey: (v: string) => void
-  clerkPublishableKey: string; setClerkPublishableKey: (v: string) => void; clerkSecretKey: string; setClerkSecretKey: (v: string) => void; auth0Domain: string; setAuth0Domain: (v: string) => void; auth0ClientId: string; setAuth0ClientId: (v: string) => void
+  clerkPublishableKey: string; setClerkPublishableKey: (v: string) => void; clerkSecretKey: string; setClerkSecretKey: (v: string) => void; auth0Domain: string; setAuth0Domain: (v: string) => void; auth0ClientId: string; setAuth0ClientId: (v: string) => void; mailgunApiKey: string; setMailgunApiKey: (v: string) => void; mailgunDomain: string; setMailgunDomain: (v: string) => void; mailtrapApiToken: string; setMailtrapApiToken: (v: string) => void; sendgridApiKey: string; setSendgridApiKey: (v: string) => void; mailchimpApiKey: string; setMailchimpApiKey: (v: string) => void; mailchimpServerPrefix: string; setMailchimpServerPrefix: (v: string) => void
   mongodbUri: string; setMongodbUri: (v: string) => void
   mysqlUrl: string; setMysqlUrl: (v: string) => void; dbHost: string; setDbHost: (v: string) => void; dbPort: string; setDbPort: (v: string) => void; dbUser: string; setDbUser: (v: string) => void; dbPassword: string; setDbPassword: (v: string) => void; dbName: string; setDbName: (v: string) => void
 }) {
@@ -249,9 +261,11 @@ function LivePreview({
   const dbName_ = database ? database.charAt(0).toUpperCase() + database.slice(1) : null
   const storageName = storage ? manifest?.storages.find(s => s.id === storage)?.name : null
   const authName = auth ? manifest?.auths.find(a => a.id === auth)?.name : null
+  const mailName = mail ? manifest?.mails.find(m => m.id === mail)?.name : null
   const showOverlay = (step === 2 && (database === 'supabase' || database === 'appwrite' || database === 'postgres')) ||
     (step === 3 && (storage === 'r2' || storage === 's3' || storage === 'supabase')) ||
-    (step === 4 && (auth === 'clerk' || auth === 'auth0'))
+    (step === 4 && (auth === 'clerk' || auth === 'auth0')) ||
+    (step === 5 && (mail === 'mailgun' || mail === 'mailtrap' || mail === 'sendgrid' || mail === 'mailchimp'))
 
   const inputStyle = 'w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-black transition-colors bg-white'
   const labelStyle = 'block text-xs font-medium text-gray-500 mb-1'
@@ -264,7 +278,7 @@ function LivePreview({
     setOverlayVisible(false)
     const t = setTimeout(() => setOverlayVisible(true), 500)
     return () => clearTimeout(t)
-  }, [database, storage, auth])
+  }, [database, storage, auth, mail])
   const closeOverlay = () => {
     setOverlayClosing(true)
     setTimeout(() => { setOverlayOpen(false); setOverlayClosing(false) }, 300)
@@ -281,55 +295,62 @@ function LivePreview({
 
       <div className="flex flex-col items-center gap-0 flex-1 justify-center">
         <div className="grid items-center justify-items-center" style={{
-          gridTemplateColumns: '1fr auto auto auto 1fr',
+          gridTemplateColumns: '1fr auto auto auto auto 1fr',
           gridTemplateRows: 'auto 12px auto 12px auto',
           gap: '24px 12px',
         }}>
-          <ExpandSlot show={!!frontend} extraStyle={{ gridColumn: 3, gridRow: 1 }}>
+          <ExpandSlot show={!!frontend && frontend !== 'none'} extraStyle={{ gridColumn: 3, gridRow: 1 }}>
             <SlotPreview selected brand={BRAND[frontend || '']?.hex} logo={LOGOS[frontend || '']} name={frontName} />
           </ExpandSlot>
 
           <div style={{ gridColumn: 4, gridRow: 1 }}>
-            <ExpandRow show={!!style}>
+            <ExpandRow show={!!style && style !== 'none'}>
               <div className="w-8 h-px bg-gray-300" style={{ marginTop: '-10px' }} />
               <SlotPreview selected brand={BRAND[style || '']?.hex} logo={LOGOS[style || '']} name={styleName} />
             </ExpandRow>
           </div>
 
-          <ExpandSlot show={!!frontend && !!backend} extraStyle={{ gridColumn: 3, gridRow: 2 }}>
+          <ExpandSlot show={!!frontend && frontend !== 'none' && !!backend && backend !== 'none'} extraStyle={{ gridColumn: 3, gridRow: 2 }}>
             <div className="w-px h-6 bg-gray-300" />
           </ExpandSlot>
 
-          <ExpandSlot show={!!backend} extraStyle={{ gridColumn: 3, gridRow: 3 }}>
+          <ExpandSlot show={!!backend && backend !== 'none'} extraStyle={{ gridColumn: 3, gridRow: 3 }}>
             <SlotPreview selected brand={BRAND[backend || '']?.hex} logo={LOGOS[backend || '']} name={backName} />
           </ExpandSlot>
 
           <div style={{ gridColumn: 4, gridRow: 3 }}>
-            <ExpandRow show={!!auth}>
+            <ExpandRow show={!!auth && auth !== 'none'}>
               <div className="w-8 h-px bg-gray-300" style={{ marginTop: '-10px' }} />
               <SlotPreview selected brand={BRAND[auth || '']?.hex} logo={LOGOS[auth || '']} name={authName} />
             </ExpandRow>
           </div>
 
-          <ExpandSlot show={!!backend && !!database} extraStyle={{ gridColumn: 3, gridRow: 4 }}>
+          <div style={{ gridColumn: 5, gridRow: 3 }}>
+            <ExpandRow show={!!mail && mail !== 'none'}>
+              <div className="w-8 h-px bg-gray-300" style={{ marginTop: '-10px' }} />
+              <SlotPreview selected brand={BRAND[mail || '']?.hex} logo={LOGOS[mail || '']} name={mailName} />
+            </ExpandRow>
+          </div>
+
+          <ExpandSlot show={!!backend && backend !== 'none' && !!database && database !== 'none'} extraStyle={{ gridColumn: 3, gridRow: 4 }}>
             <div className="w-px h-6 bg-gray-300" />
           </ExpandSlot>
 
           <div style={{ gridColumn: 2, gridRow: 5 }}>
-            <ExpandRow show={!!storage}>
+            <ExpandRow show={!!storage && storage !== 'none'}>
               <SlotPreview selected brand={BRAND[storage || '']?.hex} logo={LOGOS[storage || '']} name={storageName} />
               <div className="w-8 h-px bg-gray-300" style={{ marginTop: '-10px' }} />
             </ExpandRow>
           </div>
 
-          <ExpandSlot show={!!database} extraStyle={{ gridColumn: 3, gridRow: 5 }}>
+          <ExpandSlot show={!!database && database !== 'none'} extraStyle={{ gridColumn: 3, gridRow: 5 }}>
             <SlotPreview selected brand={BRAND[database || '']?.hex} logo={LOGOS[database || '']} name={dbName_} />
           </ExpandSlot>
         </div>
       </div>
 
       <div className="mt-auto pt-6 min-h-25 flex flex-col items-center justify-end">
-        {step === 5 && style !== null ? (
+        {step === 6 && style !== null ? (
           <div className="flex flex-col items-center gap-3 w-full" style={{ animation: 'fadeSlideUp 0.4s ease-out' }}>
             <button
               onClick={handleDownload}
@@ -425,6 +446,20 @@ function LivePreview({
               <div><label className={labelStyle}>Domain</label><input type="text" value={auth0Domain} onChange={e => setAuth0Domain(e.target.value)} placeholder="dev-xxx.us.auth0.com" className={inputStyle} />
               <div className="mt-3"><label className={labelStyle}>Client ID</label><input type="text" value={auth0ClientId} onChange={e => setAuth0ClientId(e.target.value)} placeholder="your-client-id" className={inputStyle} /></div></div>
             )}
+            {step === 5 && mail === 'mailgun' && (
+              <div><label className={labelStyle}>API Key</label><input type="text" value={mailgunApiKey} onChange={e => setMailgunApiKey(e.target.value)} placeholder="key-..." className={inputStyle} />
+              <div className="mt-3"><label className={labelStyle}>Domain</label><input type="text" value={mailgunDomain} onChange={e => setMailgunDomain(e.target.value)} placeholder="mg.yourdomain.com" className={inputStyle} /></div></div>
+            )}
+            {step === 5 && mail === 'mailtrap' && (
+              <div><label className={labelStyle}>API Token</label><input type="text" value={mailtrapApiToken} onChange={e => setMailtrapApiToken(e.target.value)} placeholder="your-api-token" className={inputStyle} /></div>
+            )}
+            {step === 5 && mail === 'sendgrid' && (
+              <div><label className={labelStyle}>API Key</label><input type="text" value={sendgridApiKey} onChange={e => setSendgridApiKey(e.target.value)} placeholder="SG.xxxxx" className={inputStyle} /></div>
+            )}
+            {step === 5 && mail === 'mailchimp' && (
+              <div><label className={labelStyle}>API Key</label><input type="text" value={mailchimpApiKey} onChange={e => setMailchimpApiKey(e.target.value)} placeholder="your-api-key" className={inputStyle} />
+              <div className="mt-3"><label className={labelStyle}>Server Prefix</label><input type="text" value={mailchimpServerPrefix} onChange={e => setMailchimpServerPrefix(e.target.value)} placeholder="us1" className={inputStyle} /></div></div>
+            )}
             <div className="flex flex-col items-center gap-3 mt-4">
               <div className="w-[70%] relative">
                 <button onClick={closeOverlay} className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-200 bg-black text-white hover:bg-gray-800 active:scale-[0.98]">
@@ -461,6 +496,7 @@ export default function Home() {
   const [docker, setDocker] = useState(false)
   const [storage, setStorage] = useState<string | null>(null)
   const [auth, setAuth] = useState<string | null>(null)
+  const [mail, setMail] = useState<string | null>(null)
   const [style, setStyle] = useState<string | null>(null)
   const [database, setDatabase] = useState<string | null>(null)
   const [supabaseUrl, setSupabaseUrl] = useState('')
@@ -494,6 +530,12 @@ export default function Home() {
   const [clerkSecretKey, setClerkSecretKey] = useState('')
   const [auth0Domain, setAuth0Domain] = useState('')
   const [auth0ClientId, setAuth0ClientId] = useState('')
+  const [mailgunApiKey, setMailgunApiKey] = useState('')
+  const [mailgunDomain, setMailgunDomain] = useState('')
+  const [mailtrapApiToken, setMailtrapApiToken] = useState('')
+  const [sendgridApiKey, setSendgridApiKey] = useState('')
+  const [mailchimpApiKey, setMailchimpApiKey] = useState('')
+  const [mailchimpServerPrefix, setMailchimpServerPrefix] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [downloading, setDownloading] = useState(false)
@@ -524,11 +566,12 @@ export default function Home() {
     if (step === 2) return database !== null
     if (step === 3) return storage !== null
     if (step === 4) return auth !== null
+    if (step === 5) return mail !== null
     return false
   }
 
   const handleNext = () => {
-    if (step < 5) setStep(s => s + 1)
+    if (step < 6) setStep(s => s + 1)
   }
 
   const handleBack = () => {
@@ -542,6 +585,7 @@ export default function Home() {
     setDocker(false)
     setStorage(null)
     setAuth(null)
+    setMail(null)
     setStyle(null)
     setDatabase(null)
     setSupabaseUrl('')
@@ -564,6 +608,12 @@ export default function Home() {
     setClerkSecretKey('')
     setAuth0Domain('')
     setAuth0ClientId('')
+    setMailgunApiKey('')
+    setMailgunDomain('')
+    setMailtrapApiToken('')
+    setSendgridApiKey('')
+    setMailchimpApiKey('')
+    setMailchimpServerPrefix('')
     setMongodbUri('')
     setMysqlUrl('')
     setDbHost('')
@@ -583,6 +633,12 @@ export default function Home() {
       auth0Domain: auth0Domain || undefined,
       auth0ClientId: auth0ClientId || undefined,
       clerkPublishableKey: clerkPublishableKey || undefined,
+      mailgunApiKey: mailgunApiKey || undefined,
+      mailgunDomain: mailgunDomain || undefined,
+      mailtrapApiToken: mailtrapApiToken || undefined,
+      sendgridApiKey: sendgridApiKey || undefined,
+      mailchimpApiKey: mailchimpApiKey || undefined,
+      mailchimpServerPrefix: mailchimpServerPrefix || undefined,
       r2Endpoint: r2Endpoint || undefined,
       r2AccessKey: r2AccessKey || undefined,
       r2SecretKey: r2SecretKey || undefined,
@@ -618,7 +674,7 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(opts),
       })
-      return;
+      // return;
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -819,6 +875,35 @@ export default function Home() {
                         <span className="text-gray-300 mx-1">+</span>
                         {manifest?.backends.find(b => b.id === backend)?.name}
                       </div>
+                      <h2 className="text-xl font-semibold text-gray-900">Choose a mail service</h2>
+                      <p className="text-sm text-gray-500 mt-1">Optionally add transactional email.</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      {manifest?.mails.map((m, i) => (
+                        <div key={m.id} style={fadeIn(i)}>
+                          <OptionCard
+                            id={m.id} name={m.name}
+                            selected={mail === m.id} onSelect={setMail}
+                            logo={LOGOS[m.id] || <div className="w-5 h-5 rounded-full border border-gray-300" />}
+                            available={m.available}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {step === 6 && (
+                  <div>
+                    <div className="mb-6">
+                      <div className="inline-flex items-center gap-2 px-3 py-1.5 border border-gray-200 text-gray-700 text-sm font-medium rounded-lg mb-3">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                        </svg>
+                        {manifest?.frontends.find(f => f.id === frontend)?.name}
+                        <span className="text-gray-300 mx-1">+</span>
+                        {manifest?.backends.find(b => b.id === backend)?.name}
+                      </div>
                       <h2 className="text-xl font-semibold text-gray-900">Choose a style</h2>
                       <p className="text-sm text-gray-500 mt-1">Optionally add a CSS framework.</p>
                     </div>
@@ -855,7 +940,7 @@ export default function Home() {
                   </svg>
                   Back
                 </button>
-                {step < 5 && (
+                {step < 6 && (
                   <button
                     onClick={handleNext}
                     disabled={!canGoNext()}
@@ -878,7 +963,7 @@ export default function Home() {
 
             <div className="w-full lg:w-1/2">
               <LivePreview
-                frontend={frontend} backend={backend} auth={auth} storage={storage} style={style} database={database}
+                frontend={frontend} backend={backend} auth={auth} mail={mail} storage={storage} style={style} database={database}
                 docker={docker} setDocker={setDocker}
                 step={step} downloading={downloading} handleDownload={handleDownload} handleReset={handleReset} manifest={manifest}
                 generating={showOverlay} onGenerateReady={onOverlayReady} treeData={treeData}
@@ -898,6 +983,10 @@ export default function Home() {
                 clerkSecretKey={clerkSecretKey} setClerkSecretKey={setClerkSecretKey}
                 auth0Domain={auth0Domain} setAuth0Domain={setAuth0Domain}
                 auth0ClientId={auth0ClientId} setAuth0ClientId={setAuth0ClientId}
+                mailgunApiKey={mailgunApiKey} setMailgunApiKey={setMailgunApiKey} mailgunDomain={mailgunDomain} setMailgunDomain={setMailgunDomain}
+                mailtrapApiToken={mailtrapApiToken} setMailtrapApiToken={setMailtrapApiToken}
+                sendgridApiKey={sendgridApiKey} setSendgridApiKey={setSendgridApiKey}
+                mailchimpApiKey={mailchimpApiKey} setMailchimpApiKey={setMailchimpApiKey} mailchimpServerPrefix={mailchimpServerPrefix} setMailchimpServerPrefix={setMailchimpServerPrefix}
                 mongodbUri={mongodbUri} setMongodbUri={setMongodbUri}
                 mysqlUrl={mysqlUrl} setMysqlUrl={setMysqlUrl}
                 dbHost={dbHost} setDbHost={setDbHost} dbPort={dbPort} setDbPort={setDbPort}
