@@ -68,45 +68,48 @@ function sortTree(nodes: { name: string; type: 'folder' | 'file'; children?: unk
 }
 
 export async function POST(req: NextRequest) {
-  const opts: ProjectOptions = await req.json()
-  const { frontend, backend, sqlite, storage, auth } = opts
-  const hasStorage = storage !== null
-  const hasAuth = auth !== null
+  try {
+    const opts: ProjectOptions = await req.json()
+    const { frontend, backend, sqlite, storage, auth } = opts
+    const hasStorage = storage !== null
+    const hasAuth = auth !== null
 
-  // Collect all static template files the same way generateProject does
-  const allPaths: string[] = [
-    ...collectStaticFiles('base', ''),
-    ...collectStaticFiles(`${backend}/server`, 'server'),
-    ...collectStaticFiles(`${frontend}/client`, 'client'),
-  ]
+    const allPaths: string[] = [
+      ...collectStaticFiles('base', ''),
+      ...collectStaticFiles(`${backend}/server`, 'server'),
+      ...collectStaticFiles(`${frontend}/client`, 'client'),
+    ]
 
-  if (sqlite) {
-    allPaths.push(
-      ...collectStaticFiles(`sqlite/${backend}/server`, 'server'),
-      ...collectStaticFiles(`sqlite/${frontend}/client/src/pages`, 'client/src/pages'),
-    )
+    if (sqlite) {
+      allPaths.push(
+        ...collectStaticFiles(`sqlite/${backend}/server`, 'server'),
+        ...collectStaticFiles(`sqlite/${frontend}/client/src/pages`, 'client/src/pages'),
+      )
+    }
+
+    if (hasStorage) {
+      allPaths.push(
+        ...collectStaticFiles(`storage/${storage}/${backend}/server`, 'server'),
+        ...collectStaticFiles(`storage/${storage}/${frontend}/client/src/pages`, 'client/src/pages'),
+      )
+    }
+
+    if (hasAuth) {
+      allPaths.push(
+        ...collectStaticFiles(`auth/${auth}/${frontend}/client/src/pages`, 'client/src/pages'),
+      )
+    }
+
+    const dynamicFiles = collectDynamicFiles(opts)
+    const dynamicSet = new Set(dynamicFiles)
+    const finalPaths = [...allPaths.filter(p => !dynamicSet.has(p)), ...dynamicFiles]
+
+    const tree = pathsToTree(finalPaths)
+    sortTree(tree)
+
+    return Response.json(tree)
+  } catch (err) {
+    console.error('[TREE API]', err)
+    return Response.json([])
   }
-
-  if (hasStorage) {
-    allPaths.push(
-      ...collectStaticFiles(`storage/${storage}/${backend}/server`, 'server'),
-      ...collectStaticFiles(`storage/${storage}/${frontend}/client/src/pages`, 'client/src/pages'),
-    )
-  }
-
-  if (hasAuth) {
-    allPaths.push(
-      ...collectStaticFiles(`auth/${auth}/${frontend}/client/src/pages`, 'client/src/pages'),
-    )
-  }
-
-  // Dynamic files replace any template files with the same name
-  const dynamicFiles = collectDynamicFiles(opts)
-  const dynamicSet = new Set(dynamicFiles)
-  const finalPaths = [...allPaths.filter(p => !dynamicSet.has(p)), ...dynamicFiles]
-
-  const tree = pathsToTree(finalPaths)
-  sortTree(tree)
-
-  return Response.json(tree)
 }

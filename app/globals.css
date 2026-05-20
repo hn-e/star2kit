@@ -27,3 +27,14 @@
 .animate-overlay-enter {
   animation: overlay-enter 0.35s ease-out;
 }
+@keyframes scan-bar {
+  0% { background-position: -60px 0; }
+  50% { background-position: calc(100% + 60px) 0; }
+  100% { background-position: -60px 0; }
+}
+.animate-scan {
+  animation: scan-bar 1.2s ease-in-out infinite;
+  background: linear-gradient(90deg, transparent 0%, rgba(156,163,175,0.5) 25%, rgba(156,163,175,0.5) 75%, transparent 100%);
+  background-size: 48px 100%;
+  background-repeat: no-repeat;
+}

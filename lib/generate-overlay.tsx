@@ -68,6 +68,19 @@ function FileIcon({ name }: { name: string }) {
 const VERBS = ['Creating', 'Generating', 'Writing', 'Composing', 'Initializing', 'Configuring', 'Adding']
 const pickVerb = () => VERBS[Math.floor(Math.random() * VERBS.length)]
 
+function deriveMessages(items: FlatItem[]): string[] {
+  const paths = items.map(i => i.path)
+  const msgs: string[] = ['Adding .env placeholders']
+  if (paths.some(p => p.includes('app.py'))) msgs.push('Checking python import routes...')
+  if (paths.some(p => p.includes('src/index.ts'))) msgs.push('Wiring...')
+  if (paths.some(p => p.includes('Login.tsx'))) msgs.push('Verifying authentication...')
+  if (paths.some(p => p.includes('routes/upload.ts'))) msgs.push('Configuring file uploads...')
+  if (paths.some(p => p.includes('routes/files.ts'))) msgs.push('Setting up file storage...')
+  if (paths.some(p => p.includes('package.json'))) msgs.push('Optimizing dependency tree...')
+  msgs.push('Checking .env placeholders')
+  return msgs
+}
+
 interface GenerateOverlayProps {
   open: boolean
   onReady: () => void
@@ -77,6 +90,8 @@ interface GenerateOverlayProps {
 export default function GenerateOverlay({ open, onReady, tree: propTree }: GenerateOverlayProps) {
   const [revealedOrder, setRevealedOrder] = useState<string[]>([])
   const [done, setDone] = useState(false)
+  const [finalizing, setFinalizing] = useState(false)
+  const [finalMsg, setFinalMsg] = useState('')
   const [lastVerb, setLastVerb] = useState('building')
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([])
 
@@ -113,7 +128,25 @@ export default function GenerateOverlay({ open, onReady, tree: propTree }: Gener
     const lastDelay = scheduled.length > 0 ? scheduled[scheduled.length - 1].delay : 0
     const doneT = setTimeout(() => {
       setDone(true)
-      onReady()
+      const msgs = deriveMessages(items)
+      if (msgs.length > 0) {
+        setFinalizing(true)
+        setFinalMsg(msgs[0])
+        let acc = 0
+        for (let i = 1; i < msgs.length; i++) {
+          const delay = 100 + Math.random() * 2000
+          acc += delay
+          const t = setTimeout(() => setFinalMsg(msgs[i]), acc)
+          timers.push(t)
+        }
+        const finalT = setTimeout(() => {
+          setFinalizing(false)
+          onReady()
+        }, acc + 400)
+        timers.push(finalT)
+      } else {
+        onReady()
+      }
     }, lastDelay + 500)
     timers.push(doneT)
 
@@ -150,7 +183,7 @@ export default function GenerateOverlay({ open, onReady, tree: propTree }: Gener
 
       <div className="p-3 font-mono text-[13px] flex-1 overflow-y-auto min-h-0">
         <div className="text-[11px] text-gray-400 mb-2 px-2">
-          {!done ? (
+          {!done && !finalizing ? (
             <span className="text-green-600 font-medium">Generating project structure...</span>
           ) : (
             <span className="text-green-700 font-medium flex items-center gap-1">
@@ -193,20 +226,24 @@ export default function GenerateOverlay({ open, onReady, tree: propTree }: Gener
         )}
       </div>
 
-      {!done && (lastRevealed ? (
+      {finalizing ? (
         <div className="shrink-0 flex items-center gap-2 px-4 py-1.5 bg-gray-50 border-t border-gray-200 text-[11px] text-gray-500 font-mono">
-          <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+          <span className="block w-14 h-3 rounded-sm bg-gray-200 animate-scan shrink-0" />
+          <span className="truncate">{finalMsg}</span>
+        </div>
+      ) : !done ? lastRevealed ? (
+        <div className="shrink-0 flex items-center gap-2 px-4 py-1.5 bg-gray-50 border-t border-gray-200 text-[11px] text-gray-500 font-mono">
+          <span className="block w-14 h-3 rounded-sm bg-gray-200 animate-scan shrink-0" />
           <span className="truncate">{lastVerb} {lastRevealed.path}</span>
         </div>
       ) : (
         <div className="shrink-0 flex items-center gap-2 px-4 py-1.5 bg-gray-50 border-t border-gray-200 text-[11px] text-gray-500 font-mono">
-          <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+          <span className="block w-14 h-3 rounded-sm bg-gray-200 animate-scan shrink-0" />
           <span className="truncate">Building project...</span>
         </div>
-      ))}
-      {done && (
+      ) : (
         <div className="shrink-0 flex items-center gap-2 px-4 py-1.5 bg-gray-50 border-t border-gray-200 text-[11px] text-gray-500 font-mono">
-          <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-500" />
+          <span className="block w-14 h-3 rounded-sm bg-gray-200 shrink-0" style={{ background: 'linear-gradient(90deg, transparent 0%, rgba(156,163,175,0.5) 25%, rgba(156,163,175,0.5) 75%, transparent 100%)', backgroundSize: '48px 100%', backgroundRepeat: 'no-repeat', backgroundPosition: 'calc(100% + 60px) 0' }} />
           <span className="truncate">Done — {total} files</span>
         </div>
       )}
