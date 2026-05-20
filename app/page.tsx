@@ -217,7 +217,7 @@ function ExpandRow({ show, children }: { show: boolean; children: React.ReactNod
 function LivePreview({
   frontend, backend, auth, style, database, storage, docker, setDocker,
   step, downloading, handleDownload, handleReset, manifest,
-  generating, onGenerateReady,
+  generating, onGenerateReady, treeData,
   supabaseUrl, setSupabaseUrl, supabaseKey, setSupabaseKey,
   databaseUrl, setDatabaseUrl,
   appwriteEndpoint, setAppwriteEndpoint, appwriteProjectId, setAppwriteProjectId, appwriteApiKey, setAppwriteApiKey,
@@ -232,7 +232,7 @@ function LivePreview({
   frontend: string | null; backend: string | null; auth: string | null; style: string | null; database: string | null; storage: string | null
   docker: boolean; setDocker: (v: boolean) => void
   step: number; downloading: boolean; handleDownload: () => void; handleReset: () => void; manifest: Manifest | null
-  generating: boolean; onGenerateReady: () => void
+  generating: boolean; onGenerateReady: () => void; treeData: unknown
   supabaseUrl: string; setSupabaseUrl: (v: string) => void; supabaseKey: string; setSupabaseKey: (v: string) => void
   databaseUrl: string; setDatabaseUrl: (v: string) => void
   appwriteEndpoint: string; setAppwriteEndpoint: (v: string) => void; appwriteProjectId: string; setAppwriteProjectId: (v: string) => void; appwriteApiKey: string; setAppwriteApiKey: (v: string) => void
@@ -271,9 +271,9 @@ function LivePreview({
   }
 
   return (
-    <div className="bg-white rounded-2xl lg:sticky lg:top-8 min-h-[80vh] flex flex-col relative overflow-hidden" style={{ backgroundImage: 'radial-gradient(circle, #cbd5e1 1px, transparent 1px)', backgroundSize: '22px 22px' }}>
+    <div className="bg-white rounded-2xl lg:sticky lg:top-8 h-[80vh] flex flex-col relative overflow-hidden" style={{ backgroundImage: 'radial-gradient(circle, #cbd5e1 1px, transparent 1px)', backgroundSize: '22px 22px' }}>
       {generating ? (
-        <GenerateOverlay open onReady={onGenerateReady} />
+        <GenerateOverlay open onReady={onGenerateReady} tree={treeData as any} />
       ) : (
       <div className="flex flex-col flex-1 p-6"><h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider text-center mb-6">
         Your Stack
@@ -496,6 +496,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null)
   const [downloading, setDownloading] = useState(false)
   const [showOverlay, setShowOverlay] = useState(false)
+  const [treeData, setTreeData] = useState<unknown>(null)
   const [manifest, setManifest] = useState<Manifest | null>(null)
   const downloadOptsRef = useRef<Record<string, unknown>>({})
 
@@ -570,8 +571,8 @@ export default function Home() {
     setDbName('')
   }
 
-  const handleDownload = () => {
-    downloadOptsRef.current = {
+  const handleDownload = async () => {
+    const opts = {
       frontend: ['react', 'vue'].includes(frontend || '') ? frontend : 'react',
       backend: ['express', 'flask'].includes(backend || '') ? backend : 'express',
       sqlite: database === 'sqlite',
@@ -591,6 +592,17 @@ export default function Home() {
       s3BucketName: s3BucketName || undefined,
       s3Region: s3Region || undefined,
       s3PublicUrl: s3PublicUrl || undefined,
+    }
+    downloadOptsRef.current = opts
+    try {
+      const res = await fetch('/api/tree', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(opts),
+      })
+      setTreeData(await res.json())
+    } catch {
+      setTreeData(null)
     }
     setShowOverlay(true)
   }
@@ -857,7 +869,7 @@ export default function Home() {
                 frontend={frontend} backend={backend} auth={auth} storage={storage} style={style} database={database}
                 docker={docker} setDocker={setDocker}
                 step={step} downloading={downloading} handleDownload={handleDownload} handleReset={handleReset} manifest={manifest}
-                generating={showOverlay} onGenerateReady={onOverlayReady}
+                generating={showOverlay} onGenerateReady={onOverlayReady} treeData={treeData}
                 supabaseUrl={supabaseUrl} setSupabaseUrl={setSupabaseUrl} supabaseKey={supabaseKey} setSupabaseKey={setSupabaseKey}
                 databaseUrl={databaseUrl} setDatabaseUrl={setDatabaseUrl}
                 appwriteEndpoint={appwriteEndpoint} setAppwriteEndpoint={setAppwriteEndpoint}

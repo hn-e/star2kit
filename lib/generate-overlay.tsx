@@ -42,12 +42,12 @@ function flattenTree(nodes: TreeNode[], parentPath = ''): FlatItem[] {
 
 const ALL_ITEMS = flattenTree(TREE)
 
-function assignTreeDelays(nodes: TreeNode[], parentPath = '', parentDelay = 0): { path: string; delay: number }[] {
-  const result: { path: string; delay: number }[] = []
+function assignTreeDelays(nodes: TreeNode[], parentPath = '', parentDelay = 0): { path: string; type: 'folder' | 'file'; delay: number }[] {
+  const result: { path: string; type: 'folder' | 'file'; delay: number }[] = []
   for (const node of nodes) {
     const currentPath = parentPath ? `${parentPath}/${node.name}` : node.name
-    const nodeDelay = parentDelay + 1000 + Math.random() * 2000
-    result.push({ path: currentPath, delay: nodeDelay })
+    const nodeDelay = parentDelay + 2000 + Math.random() * 2000
+    result.push({ path: currentPath, type: node.type, delay: nodeDelay })
     if (node.children) result.push(...assignTreeDelays(node.children, currentPath, nodeDelay))
   }
   return result
@@ -65,15 +65,22 @@ function FileIcon({ name }: { name: string }) {
   return <svg className="w-4 h-4 text-gray-400 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M6 2h8l6 6v14a2 2 0 01-2 2H6a2 2 0 01-2-2V4a2 2 0 012-2zm7 1.5V9h5.5L13 3.5z"/></svg>
 }
 
+const VERBS = ['Creating', 'Generating', 'Writing', 'Composing', 'Initializing', 'Configuring', 'Adding']
+const pickVerb = () => VERBS[Math.floor(Math.random() * VERBS.length)]
+
 interface GenerateOverlayProps {
   open: boolean
   onReady: () => void
+  tree?: TreeNode[]
 }
 
-export default function GenerateOverlay({ open, onReady }: GenerateOverlayProps) {
+export default function GenerateOverlay({ open, onReady, tree: propTree }: GenerateOverlayProps) {
   const [revealedOrder, setRevealedOrder] = useState<string[]>([])
   const [done, setDone] = useState(false)
+  const [lastVerb, setLastVerb] = useState('building')
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([])
+
+  const activeTree = propTree ?? TREE
 
   const clearTimers = useCallback(() => {
     timersRef.current.forEach(clearTimeout)
@@ -91,13 +98,14 @@ export default function GenerateOverlay({ open, onReady }: GenerateOverlayProps)
     setRevealedOrder([])
     setDone(false)
 
-    const scheduled = assignTreeDelays(TREE)
+    const scheduled = assignTreeDelays(activeTree)
     scheduled.sort((a, b) => a.delay - b.delay)
 
     const timers: ReturnType<typeof setTimeout>[] = []
-    for (const { path, delay } of scheduled) {
+    for (const { path, type, delay } of scheduled) {
       const t = setTimeout(() => {
         setRevealedOrder(prev => [...prev, path])
+        if (type === 'file') setLastVerb(pickVerb())
       }, delay)
       timers.push(t)
     }
@@ -114,7 +122,18 @@ export default function GenerateOverlay({ open, onReady }: GenerateOverlayProps)
     return () => { timers.forEach(clearTimeout) }
   }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  const items = flattenTree(activeTree)
   const revealedSet = new Set(revealedOrder)
+  const total = items.length
+  const lastRevealed = revealedOrder.length > 0
+    ? (() => {
+        for (let i = revealedOrder.length - 1; i >= 0; i--) {
+          const item = items.find(f => f.path === revealedOrder[i])
+          if (item && item.type === 'file') return item
+        }
+        return null
+      })()
+    : null
 
   if (!open) return null
 
@@ -138,12 +157,12 @@ export default function GenerateOverlay({ open, onReady }: GenerateOverlayProps)
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
               </svg>
-              Project generated — {ALL_ITEMS.length} files created
+              Project generated — {total} files created
             </span>
           )}
         </div>
 
-        {ALL_ITEMS.map((item) => {
+        {items.map((item) => {
           const revealed = revealedSet.has(item.path)
           return (
             <div
@@ -167,12 +186,30 @@ export default function GenerateOverlay({ open, onReady }: GenerateOverlayProps)
           )
         })}
 
-        {!done && revealedOrder.length < ALL_ITEMS.length && (
+        {!done && revealedOrder.length < total && (
           <div className="flex items-center gap-1.5 px-2 py-0.5" style={{ paddingLeft: '16px' }}>
             <span className="w-2 h-4 bg-gray-400 animate-pulse" />
           </div>
         )}
       </div>
+
+      {!done && (lastRevealed ? (
+        <div className="shrink-0 flex items-center gap-2 px-4 py-1.5 bg-gray-50 border-t border-gray-200 text-[11px] text-gray-500 font-mono">
+          <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+          <span className="truncate">{lastVerb} {lastRevealed.path}</span>
+        </div>
+      ) : (
+        <div className="shrink-0 flex items-center gap-2 px-4 py-1.5 bg-gray-50 border-t border-gray-200 text-[11px] text-gray-500 font-mono">
+          <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+          <span className="truncate">Building project...</span>
+        </div>
+      ))}
+      {done && (
+        <div className="shrink-0 flex items-center gap-2 px-4 py-1.5 bg-gray-50 border-t border-gray-200 text-[11px] text-gray-500 font-mono">
+          <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-500" />
+          <span className="truncate">Done — {total} files</span>
+        </div>
+      )}
     </div>
   )
 }
