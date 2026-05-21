@@ -794,9 +794,30 @@ export default function Home() {
     <div className="min-h-screen bg-white">
       <div className="max-w-none mx-auto px-8 sm:px-12 lg:px-16 py-8 sm:py-12">
         {loading && (
-          <div className="flex flex-col items-center justify-center py-16 mt-8">
-            <div className="w-8 h-8 border border-gray-200 border-t-black rounded-full animate-spin" />
-            <p className="mt-4 text-sm text-gray-500">Loading...</p>
+          <div className="flex flex-col lg:flex-row gap-8 mt-8">
+            <div className="w-full lg:w-1/2 pr-4 lg:pr-10 flex flex-col min-h-[80vh]">
+              <div className="mt-8">
+                <div className="mb-6">
+                  <div className="h-7 w-48 rounded-md animate-shimmer mb-2" />
+                  <div className="h-4 w-72 rounded-md animate-shimmer" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  {/* left shimmer cards */}
+                  {[].map(i => (
+                    <div key={i} className="flex items-center gap-4 p-5 h-20 rounded-xl border border-gray-200 bg-white">
+                      <div className="w-11 h-11 rounded-lg animate-shimmer shrink-0" />
+                      <div className="h-4 w-24 rounded-md animate-shimmer" />
+                      <div className="ml-auto w-6 h-6 rounded-full border-2 border-gray-200 shrink-0" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="w-full lg:w-1/2">
+              <div className="bg-white rounded-2xl min-h-[80vh] flex flex-col relative overflow-hidden p-6" style={{ backgroundImage: 'radial-gradient(circle, #e5e7eb 1px, transparent 1px)', backgroundSize: '22px 22px' }}>
+                <div className="h-4 w-24 rounded-md animate-shimmer mx-auto" />
+              </div>
+            </div>
           </div>
         )}
 
