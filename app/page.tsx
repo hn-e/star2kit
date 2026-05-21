@@ -594,8 +594,11 @@ export default function Home() {
   const [showAuthForm, setShowAuthForm] = useState(false)
   const [manifest, setManifest] = useState<Manifest | null>(null)
   const { user, loading: authLoading } = useUser()
-  const pendingRef = useRef(false)
   const downloadOptsRef = useRef<Record<string, unknown>>({})
+  const userRef = useRef(user)
+  const pendingAuthRef = useRef(false)
+
+  useEffect(() => { userRef.current = user }, [user])
 
   useEffect(() => {
     fetch('/api/manifest')
@@ -686,20 +689,8 @@ export default function Home() {
     setDbName('')
   }
 
-  useEffect(() => {
-    if (pendingRef.current && user) {
-      pendingRef.current = false
-      handleDownload()
-    }
-  }, [user])
-
   const handleDownload = async () => {
     if (authLoading) return
-    if (!user) {
-      pendingRef.current = true
-      setShowAuthForm(true)
-      return
-    }
     const opts = {
       frontend: ['react', 'vue'].includes(frontend || '') ? frontend : 'react',
       backend: ['express', 'flask'].includes(backend || '') ? backend : 'express',
@@ -741,30 +732,45 @@ export default function Home() {
     setShowOverlay(true)
   }
 
-  const onOverlayReady = useCallback(async () => {
+  const performDownload = () => {
     setDownloading(true)
     const opts = downloadOptsRef.current as Record<string, unknown>
-    try {
-      const res = await fetch('/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(opts),
+    fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(opts),
+    })
+      .then(r => r.blob())
+      .then(blob => {
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = 'project.zip'
+        a.click()
+        URL.revokeObjectURL(url)
       })
-      // return;
-      const blob = await res.blob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = 'project.zip'
-      a.click()
-      URL.revokeObjectURL(url)
-    } catch {
-      alert('Failed to download. Please try again.')
-    } finally {
-      setDownloading(false)
-      setShowOverlay(false)
+      .catch(() => alert('Failed to download. Please try again.'))
+      .finally(() => {
+        setDownloading(false)
+        setShowOverlay(false)
+      })
+  }
+
+  const onOverlayReady = useCallback(async () => {
+    if (!userRef.current) {
+      pendingAuthRef.current = true
+      setShowAuthForm(true)
+      return
     }
+    performDownload()
   }, [])
+
+  useEffect(() => {
+    if (pendingAuthRef.current && user) {
+      pendingAuthRef.current = false
+      performDownload()
+    }
+  }, [user])
 
   // Safety timeout: if the overlay is open for 10s without onReady firing,
   // auto-trigger the download so the user is never stuck.
