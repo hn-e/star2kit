@@ -303,7 +303,15 @@ function LivePreview({
   }
 
   return (
-    <div className="bg-white rounded-2xl lg:sticky lg:top-8 h-[80vh] flex flex-col relative overflow-hidden" style={{ backgroundImage: 'radial-gradient(circle, #cbd5e1 1px, transparent 1px)', backgroundSize: '22px 22px' }}>
+    <div 
+      className="bg-white rounded-2xl lg:sticky lg:top-8 flex flex-col relative overflow-hidden" 
+      style={{ 
+        backgroundImage: 'radial-gradient(circle, #cbd5e1 1px, transparent 1px)', 
+        backgroundSize: '22px 22px',
+        height: generating ? '80vh' : undefined,
+        minHeight: generating ? undefined : '80vh',
+      }}
+    >
       {generating ? (
         <GenerateOverlay open onReady={onGenerateReady} tree={treeData as any} />
       ) : (

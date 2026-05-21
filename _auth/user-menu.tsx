@@ -35,8 +35,7 @@ export function UserMenu({ onLoginClick }: { onLoginClick?: () => void }) {
                   {avatar ? <img src={avatar} alt="" className="w-full h-full object-cover" /> : initial}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">{user.user_metadata?.name || user.user_metadata?.full_name || 'User'}</p>
-                  <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                  <p className="text-sm font-medium text-gray-900 truncate">{user.user_metadata?.name || user.user_metadata?.full_name || user.email}</p>
                 </div>
               </div>
             ) : null}
