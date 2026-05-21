@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { SiJavascript, SiJquery, SiReact, SiVuedotjs, SiSvelte, SiSolid, SiFlask, SiExpress, SiFastapi, SiNextdotjs, SiDjango, SiSqlite, SiSupabase, SiPostgresql, SiAppwrite, SiMysql, SiMongodb, SiTailwindcss, SiBootstrap, SiBulma, SiClerk, SiMailgun, SiMailtrap, SiSendgrid, SiMailchimp, SiStripe, SiRazorpay, SiPaypal } from 'react-icons/si'
 import GenerateOverlay from '@/lib/generate-overlay'
 import { FaAws, FaCloudflare } from 'react-icons/fa'
+import { useUser } from '@/_auth/auth-context'
+import { AuthForm } from '@/_auth/auth-form'
 
 const BRAND: Record<string, { hex: string; name: string }> = {
   vanilla: { hex: '#F7DF1E', name: 'JavaScript' },
@@ -501,10 +503,10 @@ function LivePreview({
             )}
             <div className="flex flex-col items-center gap-3 mt-4">
               <div className="w-[70%] relative">
-                <button onClick={closeOverlay} className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-200 bg-black text-white hover:bg-gray-800 active:scale-[0.98]">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
-                  Done
-                </button>
+                 <button onClick={closeOverlay} className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-200 bg-black text-white hover:bg-gray-800 active:scale-[0.98] cursor-pointer">
+                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                   Done
+                 </button>
                 <div className="group absolute top-1/2 -translate-y-1/2" style={{ right: '-28px' }}>
                   <svg className="w-5 h-5 text-gray-400 cursor-help" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><path strokeLinecap="round" strokeLinejoin="round" d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" /><path d="M12 17h.01" strokeLinecap="round" strokeLinejoin="round" /></svg>
                   <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity w-50 text-center pointer-events-none shadow-lg">
@@ -512,7 +514,7 @@ function LivePreview({
                   </div>
                 </div>
               </div>
-              <button onClick={closeOverlay} className="text-xs text-gray-400 hover:text-gray-600 transition-colors">I&apos;ll add manually</button>
+               <button onClick={closeOverlay} className="text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer">I&apos;ll add manually</button>
             </div>
           </div>
         </div>
@@ -589,7 +591,10 @@ export default function Home() {
   const [downloading, setDownloading] = useState(false)
   const [showOverlay, setShowOverlay] = useState(false)
   const [treeData, setTreeData] = useState<unknown>(null)
+  const [showAuthForm, setShowAuthForm] = useState(false)
   const [manifest, setManifest] = useState<Manifest | null>(null)
+  const { user, loading: authLoading } = useUser()
+  const pendingRef = useRef(false)
   const downloadOptsRef = useRef<Record<string, unknown>>({})
 
   useEffect(() => {
@@ -681,7 +686,20 @@ export default function Home() {
     setDbName('')
   }
 
+  useEffect(() => {
+    if (pendingRef.current && user) {
+      pendingRef.current = false
+      handleDownload()
+    }
+  }, [user])
+
   const handleDownload = async () => {
+    if (authLoading) return
+    if (!user) {
+      pendingRef.current = true
+      setShowAuthForm(true)
+      return
+    }
     const opts = {
       frontend: ['react', 'vue'].includes(frontend || '') ? frontend : 'react',
       backend: ['express', 'flask'].includes(backend || '') ? backend : 'express',
@@ -774,6 +792,13 @@ export default function Home() {
             <p className="text-sm text-red-600 font-medium">{error}</p>
             <button onClick={() => window.location.reload()} className="mt-3 text-sm text-gray-600 hover:text-gray-800 underline">Retry</button>
           </div>
+        )}
+
+        {showAuthForm && (
+          <AuthForm
+            onSuccess={() => setShowAuthForm(false)}
+            onClose={() => setShowAuthForm(false)}
+          />
         )}
 
         {!loading && !error && (
@@ -1018,7 +1043,7 @@ export default function Home() {
                     inline-flex items-center gap-1.5 px-6 py-2 text-sm font-semibold rounded-xl transition-all duration-200
                     ${step === 0
                       ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
-                      : 'bg-black text-white hover:bg-gray-800'
+                      : 'bg-black text-white hover:bg-gray-800 cursor-pointer'
                     }
                   `}
                 >
@@ -1034,10 +1059,10 @@ export default function Home() {
                     className={`
                       inline-flex items-center gap-1.5 px-6 py-2 text-sm font-semibold rounded-xl transition-all duration-200
                       ${canGoNext()
-                        ? 'bg-black text-white hover:bg-gray-800'
-                        : 'bg-gray-100 text-gray-300 cursor-not-allowed'
-                      }
-                    `}
+                      ? 'bg-black text-white hover:bg-gray-800 cursor-pointer'
+                      : 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                    }
+                  `}
                   >
                     Next
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
