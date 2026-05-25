@@ -88,7 +88,6 @@ function generateServerPkg(storage: boolean): string {
     devDeps['@types/multer'] = '^1.4.0'
   }
   deps['dotenv'] = '^16.0.0'
-  devDeps['@types/dotenv'] = '^8.2.0'
   return JSON.stringify({
     name: 'server', private: true, type: 'module',
     scripts: { dev: 'tsx watch src/index.ts' },
@@ -153,7 +152,7 @@ function generateClientPkg(frontend: string, auth: string | null): string {
   const deps: Record<string, string> = { vue: '^3.5.0', 'vue-router': '^4.5.0' }
   const devDeps: Record<string, string> = { '@vitejs/plugin-vue': '^5.2.0', typescript: '^5.7.0', vite: '^6.0.0', 'vue-tsc': '^2.2.0' }
   if (auth === 'auth0') deps['@auth0/auth0-vue'] = '^2.0.0'
-  if (auth === 'clerk') deps['@clerk/clerk-vue'] = '^1.0.0'
+  if (auth === 'clerk') deps['@clerk/vue'] = '^2.0.0'
   return JSON.stringify({ name: 'client', private: true, type: 'module', scripts: { dev: 'vite', build: 'vue-tsc -b && vite build' }, dependencies: deps, devDependencies: devDeps }, null, 2)
 }
 
@@ -237,7 +236,7 @@ function generateVueMain(auth: string | null): string {
     lines.push(`import { createAuth0 } from '@auth0/auth0-vue'`)
   }
   if (auth === 'clerk') {
-    lines.push(`import { clerkPlugin } from '@clerk/clerk-vue'`)
+    lines.push(`import { clerkPlugin } from '@clerk/vue'`)
   }
   lines.push(``, `const app = createApp(App)`)
   if (auth === 'auth0') {

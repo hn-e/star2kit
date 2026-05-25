@@ -17,9 +17,10 @@
 </template>
 
 <script setup lang="ts">
-import { useUser, useSignIn, useSignOut } from '@clerk/clerk-vue'
+import { useUser, useClerk } from '@clerk/vue'
 
 const { isLoaded, isSignedIn, user } = useUser()
-const { signIn } = useSignIn()
-const { signOut } = useSignOut()
+const clerk = useClerk()
+const signIn = () => clerk.value?.openSignIn()
+const signOut = () => clerk.value?.signOut()
 </script>
