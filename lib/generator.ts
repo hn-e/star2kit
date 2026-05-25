@@ -62,6 +62,7 @@ export async function generateProject(options: ProjectOptions): Promise<Buffer> 
   if (frontend === 'react') {
     zip.file('client/src/App.tsx', generateReactApp(sqlite, hasStorage, auth))
   } else {
+    zip.file('client/src/App.vue', generateVueApp(sqlite, hasStorage, auth !== null))
     zip.file('client/src/main.ts', generateVueMain(auth))
     zip.file('client/src/router/index.ts', generateVueRouter(sqlite, hasStorage, auth !== null))
   }
@@ -223,6 +224,34 @@ function generateReactApp(sqlite: boolean, storage: boolean, auth: string | null
     `    </div>`,
     `  )`,
     `}`,
+  ].join('\n')
+}
+
+function generateVueApp(sqlite: boolean, storage: boolean, auth: boolean): string {
+  const links: string[] = [`<router-link to="/">Home</router-link>`]
+  if (sqlite) links.push(`<router-link to="/push">Push</router-link>`, `<router-link to="/list">List</router-link>`)
+  if (storage) links.push(`<router-link to="/upload">Upload</router-link>`, `<router-link to="/files">Files</router-link>`)
+  if (auth) links.push(`<router-link to="/login">Login</router-link>`)
+  return [
+    `<template>`,
+    `  <div>`,
+    `    <nav>`,
+    ...links.map(l => `      ${l}`),
+    `    </nav>`,
+    `    <router-view />`,
+    `  </div>`,
+    `</template>`,
+    ``,
+    `<style>`,
+    `body { font-family: system-ui, sans-serif; margin: 2rem; background: #fafafa; }`,
+    `nav { display: flex; gap: 1rem; margin-bottom: 2rem; }`,
+    `a { color: #2563eb; text-decoration: none; }`,
+    `a:hover { text-decoration: underline; }`,
+    `button { padding: 0.5rem 1rem; background: #2563eb; color: #fff; border: none; border-radius: 4px; cursor: pointer; }`,
+    `input { padding: 0.5rem; margin-right: 0.5rem; border: 1px solid #ccc; border-radius: 4px; }`,
+    `ul { list-style: none; padding: 0; }`,
+    `li { padding: 0.5rem 0; border-bottom: 1px solid #eee; }`,
+    `</style>`,
   ].join('\n')
 }
 
