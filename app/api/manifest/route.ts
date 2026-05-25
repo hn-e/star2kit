@@ -6,7 +6,7 @@ export async function GET() {
       { id: 'react', name: 'React', available: true },
       { id: 'vue', name: 'Vue', available: true },
       { id: 'svelte', name: 'Svelte', available: false },
-      { id: 'solid', name: 'Solid', available: false },
+      { id: 'solid', name: 'Solid', available: true },
     ],
     backends: [
       { id: 'flask', name: 'Flask', available: true },

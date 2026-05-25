@@ -1,5 +1,5 @@
 export interface ProjectOptions {
-  frontend: 'react' | 'vue'
+  frontend: 'react' | 'vue' | 'solid'
   backend: 'express' | 'flask'
   sqlite: boolean
   storage: 'r2' | 's3' | null

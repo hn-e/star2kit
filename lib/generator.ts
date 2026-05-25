@@ -61,10 +61,12 @@ export async function generateProject(options: ProjectOptions): Promise<Buffer> 
   zip.file('client/package.json', generateClientPkg(frontend, auth))
   if (frontend === 'react') {
     zip.file('client/src/App.tsx', generateReactApp(sqlite, hasStorage, auth))
-  } else {
+  } else if (frontend === 'vue') {
     zip.file('client/src/App.vue', generateVueApp(sqlite, hasStorage, auth !== null))
     zip.file('client/src/main.ts', generateVueMain(auth))
     zip.file('client/src/router/index.ts', generateVueRouter(sqlite, hasStorage, auth !== null))
+  } else {
+    zip.file('client/src/App.tsx', generateSolidApp(sqlite, hasStorage))
   }
 
   // 8. .env files
@@ -150,11 +152,14 @@ function generateClientPkg(frontend: string, auth: string | null): string {
     if (auth === 'clerk') deps['@clerk/clerk-react'] = '^5.0.0'
     return JSON.stringify({ name: 'client', private: true, type: 'module', scripts: { dev: 'vite', build: 'tsc -b && vite build' }, dependencies: deps, devDependencies: devDeps }, null, 2)
   }
-  const deps: Record<string, string> = { vue: '^3.5.0', 'vue-router': '^4.5.0' }
-  const devDeps: Record<string, string> = { '@vitejs/plugin-vue': '^5.2.0', typescript: '^5.7.0', vite: '^6.0.0', 'vue-tsc': '^2.2.0' }
-  if (auth === 'auth0') deps['@auth0/auth0-vue'] = '^2.0.0'
-  if (auth === 'clerk') deps['@clerk/vue'] = '^2.0.0'
-  return JSON.stringify({ name: 'client', private: true, type: 'module', scripts: { dev: 'vite', build: 'vue-tsc -b && vite build' }, dependencies: deps, devDependencies: devDeps }, null, 2)
+  if (frontend === 'vue') {
+    const deps: Record<string, string> = { vue: '^3.5.0', 'vue-router': '^4.5.0' }
+    const devDeps: Record<string, string> = { '@vitejs/plugin-vue': '^5.2.0', typescript: '^5.7.0', vite: '^6.0.0', 'vue-tsc': '^2.2.0' }
+    if (auth === 'auth0') deps['@auth0/auth0-vue'] = '^2.0.0'
+    if (auth === 'clerk') deps['@clerk/vue'] = '^2.0.0'
+    return JSON.stringify({ name: 'client', private: true, type: 'module', scripts: { dev: 'vite', build: 'vue-tsc -b && vite build' }, dependencies: deps, devDependencies: devDeps }, null, 2)
+  }
+  return JSON.stringify({ name: 'client', private: true, type: 'module', scripts: { dev: 'vite', build: 'vite build' }, dependencies: { 'solid-js': '^1.9.0', '@solidjs/router': '^0.15.0' }, devDependencies: { vite: '^6.0.0', 'vite-plugin-solid': '^2.0.0', typescript: '^5.7.0' } }, null, 2)
 }
 
 function generateReactApp(sqlite: boolean, storage: boolean, auth: string | null): string {
@@ -212,6 +217,40 @@ function generateReactApp(sqlite: boolean, storage: boolean, auth: string | null
     ...topLines,
     ...lines, ``,
     ...afterRoutes,
+    `export default function App() {`,
+    `  return (`,
+    `    <div>`,
+    `      <nav>`,
+    ...nav.map(l => `        ${l}`),
+    `      </nav>`,
+    `      <Routes>`,
+    ...routes.map(l => `        ${l}`),
+    `      </Routes>`,
+    `    </div>`,
+    `  )`,
+    `}`,
+  ].join('\n')
+}
+
+function generateSolidApp(sqlite: boolean, storage: boolean): string {
+  const lines: string[] = [
+    `import { Routes, Route, A } from '@solidjs/router'`,
+    `import Home from './pages/Home'`,
+  ]
+  const routes: string[] = [`<Route path="/" component={Home} />`]
+  const nav: string[] = [`<A href="/">Home</A>`]
+  if (sqlite) {
+    lines.push(`import Push from './pages/Push'`, `import List from './pages/List'`)
+    routes.push(`<Route path="/push" component={Push} />`, `<Route path="/list" component={List} />`)
+    nav.push(`<A href="/push">Push</A>`, `<A href="/list">List</A>`)
+  }
+  if (storage) {
+    lines.push(`import Upload from './pages/Upload'`, `import Files from './pages/Files'`)
+    routes.push(`<Route path="/upload" component={Upload} />`, `<Route path="/files" component={Files} />`)
+    nav.push(`<A href="/upload">Upload</A>`, `<A href="/files">Files</A>`)
+  }
+  return [
+    ...lines, ``,
     `export default function App() {`,
     `  return (`,
     `    <div>`,

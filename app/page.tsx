@@ -13,7 +13,7 @@ const BRAND: Record<string, { hex: string; name: string }> = {
   react: { hex: '#61DAFB', name: 'React' },
   vue: { hex: '#42B883', name: 'Vue' },
   svelte: { hex: '#FF3E00', name: 'Svelte' },
-  solid: { hex: '#2C4F7C', name: 'Solid' },
+  solid: { hex: '#2C4F7C', name: 'SolidJS' },
   flask: { hex: '#000000', name: 'Flask' },
   express: { hex: '#64748B', name: 'Express' },
   local: { hex: '#64748B', name: 'Local' },
@@ -700,7 +700,7 @@ export default function Home() {
   const handleDownload = async () => {
     if (authLoading) return
     const opts = {
-      frontend: ['react', 'vue'].includes(frontend || '') ? frontend : 'react',
+      frontend: ['react', 'vue', 'solid'].includes(frontend || '') ? frontend : 'react',
       backend: ['express', 'flask'].includes(backend || '') ? backend : 'express',
       sqlite: database === 'sqlite',
       storage: (storage === 'r2' || storage === 's3') ? storage : null,
