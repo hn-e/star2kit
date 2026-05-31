@@ -234,7 +234,8 @@ function generateReactApp(sqlite: boolean, storage: boolean, auth: string | null
 
 function generateSolidApp(sqlite: boolean, storage: boolean): string {
   const lines: string[] = [
-    `import { Routes, Route, A } from '@solidjs/router'`,
+    `import { Router, Route, A } from '@solidjs/router'`,
+    `import type { RouteSectionProps } from '@solidjs/router'`,
     `import Home from './pages/Home'`,
   ]
   const routes: string[] = [`<Route path="/" component={Home} />`]
@@ -251,16 +252,24 @@ function generateSolidApp(sqlite: boolean, storage: boolean): string {
   }
   return [
     ...lines, ``,
-    `export default function App() {`,
+    `function Layout(props: RouteSectionProps) {`,
     `  return (`,
     `    <div>`,
     `      <nav>`,
-    ...nav.map(l => `        ${l}`),
+    ...nav.map(l => `      ${l}`),
     `      </nav>`,
-    `      <Routes>`,
-    ...routes.map(l => `        ${l}`),
-    `      </Routes>`,
+    `      {props.children}`,
     `    </div>`,
+    `  )`,
+    `}`,
+    ``,
+    `export default function App() {`,
+    `  return (`,
+    `    <Router>`,
+    `      <Route component={Layout}>`,
+    ...routes.map(l => `        ${l}`),
+    `      </Route>`,
+    `    </Router>`,
     `  )`,
     `}`,
   ].join('\n')
