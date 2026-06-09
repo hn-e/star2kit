@@ -66,7 +66,7 @@ export async function generateProject(options: ProjectOptions): Promise<Buffer> 
     zip.file('client/src/main.ts', generateVueMain(auth))
     zip.file('client/src/router/index.ts', generateVueRouter(sqlite, hasStorage, auth !== null))
   } else {
-    zip.file('client/src/App.tsx', generateSolidApp(sqlite, hasStorage))
+    zip.file('client/src/App.tsx', generateSolidApp(sqlite, hasStorage, auth))
   }
 
   // 8. .env files
@@ -159,7 +159,10 @@ function generateClientPkg(frontend: string, auth: string | null): string {
     if (auth === 'clerk') deps['@clerk/vue'] = '^2.0.0'
     return JSON.stringify({ name: 'client', private: true, type: 'module', scripts: { dev: 'vite', build: 'vue-tsc -b && vite build' }, dependencies: deps, devDependencies: devDeps }, null, 2)
   }
-  return JSON.stringify({ name: 'client', private: true, type: 'module', scripts: { dev: 'vite', build: 'vite build' }, dependencies: { 'solid-js': '^1.9.0', '@solidjs/router': '^0.15.0' }, devDependencies: { vite: '^6.0.0', 'vite-plugin-solid': '^2.0.0', typescript: '^5.7.0' } }, null, 2)
+  const deps: Record<string, string> = { 'solid-js': '^1.9.0', '@solidjs/router': '^0.15.0' }
+  if (auth === 'auth0') deps['@auth0/auth0-spa-js'] = '^2.0.0'
+  if (auth === 'clerk') deps['@clerk/clerk-js'] = '^5.0.0'
+  return JSON.stringify({ name: 'client', private: true, type: 'module', scripts: { dev: 'vite', build: 'vite build' }, dependencies: deps, devDependencies: { vite: '^6.0.0', 'vite-plugin-solid': '^2.0.0', typescript: '^5.7.0' } }, null, 2)
 }
 
 function generateReactApp(sqlite: boolean, storage: boolean, auth: string | null): string {
@@ -232,7 +235,7 @@ function generateReactApp(sqlite: boolean, storage: boolean, auth: string | null
   ].join('\n')
 }
 
-function generateSolidApp(sqlite: boolean, storage: boolean): string {
+function generateSolidApp(sqlite: boolean, storage: boolean, auth: string | null): string {
   const lines: string[] = [
     `import { Router, Route, A } from '@solidjs/router'`,
     `import type { RouteSectionProps } from '@solidjs/router'`,
@@ -249,6 +252,11 @@ function generateSolidApp(sqlite: boolean, storage: boolean): string {
     lines.push(`import Upload from './pages/Upload'`, `import Files from './pages/Files'`)
     routes.push(`<Route path="/upload" component={Upload} />`, `<Route path="/files" component={Files} />`)
     nav.push(`<A href="/upload">Upload</A>`, `<A href="/files">Files</A>`)
+  }
+  if (auth) {
+    lines.push(`import Login from './pages/Login'`)
+    routes.push(`<Route path="/login" component={Login} />`)
+    nav.push(`<A href="/login">Login</A>`)
   }
   return [
     ...lines, ``,
