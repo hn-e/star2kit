@@ -1,0 +1,22 @@
+{
+  "name": "kitinit",
+  "version": "0.1.0",
+  "description": "CLI for Kit Init - project scaffolding wizard",
+  "type": "module",
+  "bin": {
+    "kitinit": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@inquirer/prompts": "^7.0.0",
+    "adm-zip": "^0.5.16"
+  },
+  "devDependencies": {
+    "@types/adm-zip": "^0.5.5",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.0.0"
+  }
+}
