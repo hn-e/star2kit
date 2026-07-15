@@ -3,7 +3,7 @@
 import { select, input, confirm, password } from '@inquirer/prompts'
 import AdmZip from 'adm-zip'
 
-const SERVER_URL = process.env.KITINIT_URL || 'http://localhost:3000'
+const SERVER_URL = process.env.KITINIT_URL || 'https://kitinit.com'
 
 interface ManifestOption {
   id: string

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { select, input, password } from '@inquirer/prompts';
 import AdmZip from 'adm-zip';
-const SERVER_URL = process.env.KITINIT_URL || 'http://localhost:3000';
+const SERVER_URL = process.env.KITINIT_URL || 'https://kitinit.com';
 const STORAGE_CREDENTIALS = {
     s3: [
         { key: 's3Endpoint', label: 'S3 Endpoint URL' },
