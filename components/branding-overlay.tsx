@@ -247,7 +247,7 @@ export function BrandingOverlay() {
   }, [showContent])
 
   const handleCopy = useCallback(async () => {
-    await navigator.clipboard.writeText('npx kitinit')
+    await navigator.clipboard.writeText('npm install kitinit')
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }, [])
@@ -273,19 +273,7 @@ export function BrandingOverlay() {
       onTransitionEnd={handleTransitionEnd}
     >
       {showContent && (
-        <div className="min-h-screen flex flex-col items-center justify-center px-6 py-20 gap-10">
-          <div className="branding-tagline text-center max-w-3xl">
-            <p className="text-5xl font-bold text-white tracking-tight leading-tight">
-              kit init before git init
-            </p>
-          </div>
-
-          <div className="branding-subtitle text-center max-w-xl">
-            <p className="text-purple-200/80 text-base leading-relaxed">
-              The fastest way to scaffold your full-stack project. Choose your stack and ship today.
-            </p>
-          </div>
-
+        <div className="min-h-screen flex flex-col items-center justify-center px-6 py-20">
           <div className="w-full max-w-4xl">
             <div className="branding-terminal-wrapper bg-gray-950 rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
               <div className="flex items-center gap-2 px-5 py-4 border-b border-white/10">
@@ -322,20 +310,25 @@ export function BrandingOverlay() {
             <div className="flex items-center justify-center mt-6">
               <button
                 onClick={handleCopy}
-                className="flex items-center gap-3 px-5 py-3 bg-white/10 hover:bg-white/15 border border-white/10 rounded-xl transition-all duration-200 group"
+                className="group flex rounded-lg overflow-hidden border border-white/10 hover:border-white/20 transition-all duration-200"
               >
-                <code className="text-purple-200 text-sm font-mono">npx kitinit</code>
-                <span className="text-[10px] tracking-wide text-purple-300/60 group-hover:text-purple-300/90 transition-colors">
-                  {copied ? 'Copied!' : 'Click to copy'}
+                <span className="flex items-center gap-2 px-5 py-3 bg-white/10">
+                  <code className="text-purple-200 text-sm font-mono">npm install kitinit</code>
+                </span>
+                <span className="flex items-center justify-center px-3.5 bg-white/15 group-hover:bg-white/20 transition-colors border-l border-white/10">
+                  {copied ? (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-green-400">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  ) : (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-purple-300">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                    </svg>
+                  )}
                 </span>
               </button>
             </div>
-          </div>
-
-          <div className="text-center">
-            <p className="text-purple-200/40 text-sm tracking-wide">
-              scroll to start building &darr;
-            </p>
           </div>
         </div>
       )}
