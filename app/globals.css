@@ -81,13 +81,13 @@
 }
 
 .branding-terminal-wrapper {
-  animation: branding-stagger-fade 0.6s ease-out 0.4s both;
+  animation: branding-stagger-fade 0.6s ease-out 1s both;
 }
 
 .branding-tagline {
-  animation: branding-stagger-fade 0.6s ease-out 0.7s both;
+  animation: branding-stagger-fade 0.6s ease-out 0.4s both;
 }
 
 .branding-subtitle {
-  animation: branding-stagger-fade 0.6s ease-out 1s both;
+  animation: branding-stagger-fade 0.6s ease-out 0.7s both;
 }
